@@ -4,7 +4,7 @@ import {
   Bot,
   CalendarCheck,
   Flame,
-  Github,
+  LayoutGrid,
   LineChart,
   ShieldCheck,
   Trophy,
@@ -36,7 +36,7 @@ const features = [
       "Commit to a 7–365 day challenge. Submit text or a link each day and keep your streak alive.",
   },
   {
-    icon: Github,
+    icon: LayoutGrid,
     title: "Contribution heatmap",
     description:
       "A GitHub-style activity grid on your public profile shows the world your consistency at a glance.",
