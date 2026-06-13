@@ -6,9 +6,48 @@ import { getCurrentStreak, getTotalProofScore } from "@/lib/dynamo/streaks";
 import HeatmapCalendar from "@/components/HeatmapCalendar";
 import ProofList from "@/components/ProofList";
 import Link from "next/link";
+import { Metadata } from "next";
 
 interface PageProps {
   params: Promise<{ handle: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  // КРИТИЧНО ДЛЯ NEXT.JS 16: асинхронно отримуємо параметри
+  const { handle } = await params;
+
+  const user = await getUserByHandle(handle);
+
+  if (!user) {
+    return {
+      title: "User Not Found | ProofLoom",
+      description: "The requested profile does not exist.",
+    };
+  }
+
+  const streak = await getCurrentStreak(handle);
+  const displayName = user.display_name || handle;
+  const title = `${displayName} (@${handle}) | ProofLoom`;
+  const description = `${streak}-day skill building streak. AI-verified daily progress.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `https://proofloom.vercel.app/u/${handle}`,
+      siteName: "ProofLoom",
+      type: "profile",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
 }
 
 export default async function PublicProfilePage({ params }: PageProps) {
