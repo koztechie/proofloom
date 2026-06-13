@@ -1,31 +1,36 @@
-import Link from "next/link"
-import { ArrowLeft, CheckCircle2, Flame, LinkIcon, Sparkles } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Separator } from "@/components/ui/separator"
+import Link from "next/link";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Flame,
+  LinkIcon,
+  Sparkles,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { AppShell } from "@/components/app-shell"
-import { challenges, recentProofs } from "@/lib/mock-data"
+} from "@/components/ui/card";
+import { AppShell } from "@/components/app-shell";
+import { challenges, recentProofs } from "@/lib/mock-data";
 
 export function generateStaticParams() {
-  return challenges.map((c) => ({ id: c.id }))
+  return challenges.map((c) => ({ id: c.id }));
 }
 
 export default function ChallengePage({ params }: { params: { id: string } }) {
-  const challenge =
-    challenges.find((c) => c.id === params.id) ?? challenges[0]
+  const challenge = challenges.find((c) => c.id === params.id) ?? challenges[0];
   const progress = Math.round(
     (challenge.daysCompleted / challenge.target) * 100,
-  )
+  );
 
   return (
     <AppShell>
@@ -73,8 +78,8 @@ export default function ChallengePage({ params }: { params: { id: string } }) {
             <CardHeader>
               <CardTitle>Submit today&apos;s proof</CardTitle>
               <CardDescription>
-                Describe what you did today. Add a link if you have evidence. Our
-                AI evaluator will score your submission.
+                Describe what you did today. Add a link if you have evidence.
+                Our AI evaluator will score your submission.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -142,7 +147,9 @@ export default function ChallengePage({ params }: { params: { id: string } }) {
 
         {/* Proof history */}
         <div className="flex flex-col gap-4">
-          <h2 className="text-lg font-semibold tracking-tight">Proof history</h2>
+          <h2 className="text-lg font-semibold tracking-tight">
+            Proof history
+          </h2>
           <div className="flex flex-col gap-4">
             {recentProofs.map((proof) => (
               <Card key={proof.id}>
@@ -184,5 +191,5 @@ export default function ChallengePage({ params }: { params: { id: string } }) {
         </div>
       </div>
     </AppShell>
-  )
+  );
 }
