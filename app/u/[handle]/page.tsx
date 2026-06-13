@@ -4,6 +4,7 @@ import { getChallengesByUserId } from "@/lib/db/challenges";
 import { getProofsByHandle } from "@/lib/dynamo/proofs";
 import { getCurrentStreak, getTotalProofScore } from "@/lib/dynamo/streaks";
 import Link from "next/link";
+import HeatmapCalendar from "@/components/HeatmapCalendar";
 
 interface PageProps {
   params: Promise<{ handle: string }>;
@@ -26,6 +27,11 @@ export default async function PublicProfilePage({ params }: PageProps) {
     getCurrentStreak(handle),
     getTotalProofScore(handle),
   ]);
+
+  const heatmapData = proofs.map((p) => ({
+    date: p.sk.split("#")[1],
+    score: p.ai_score,
+  }));
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 pb-12">
@@ -94,12 +100,10 @@ export default async function PublicProfilePage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Плейсхолдер для календаря Heatmap (реалізуємо на Кроці 34) */}
+        {/* Реальний інтерактивний календар Heatmap */}
         <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl">
           <h2 className="text-lg font-bold mb-4">Activity Heatmap</h2>
-          <div className="h-32 bg-zinc-950 rounded-lg flex items-center justify-center text-zinc-600 border border-dashed border-zinc-800">
-            [Heatmap Calendar Placeholder — coming at Step 34]
-          </div>
+          <HeatmapCalendar proofs={heatmapData} />
         </div>
 
         {/* Публічні челенджі профілю */}
