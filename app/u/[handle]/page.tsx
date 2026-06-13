@@ -1,182 +1,159 @@
-import Link from "next/link"
-import { CalendarDays, Flame, LinkIcon, MapPin, Sparkles, Trophy } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { AppShell } from "@/components/app-shell"
-import { ContributionHeatmap } from "@/components/contribution-heatmap"
-import { recentProofs } from "@/lib/mock-data"
+import { notFound } from "next/navigation";
+import { getUserByHandle } from "@/lib/db/users";
+import { getChallengesByUserId } from "@/lib/db/challenges";
+import { getProofsByHandle } from "@/lib/dynamo/proofs";
+import { getCurrentStreak, getTotalProofScore } from "@/lib/dynamo/streaks";
+import Link from "next/link";
 
-export function generateMetadata({ params }: { params: { handle: string } }) {
-  return {
-    title: `@${params.handle} — ProofLoom`,
-  }
+interface PageProps {
+  params: Promise<{ handle: string }>;
 }
 
-const profileStats = [
-  { label: "Total proofs", value: "312" },
-  { label: "Current streak", value: "48" },
-  { label: "Longest streak", value: "96" },
-  { label: "Avg score", value: "89" },
-]
+export default async function PublicProfilePage({ params }: PageProps) {
+  // КРИТИЧНО ДЛЯ NEXT.JS 16: асинхронно отримуємо параметри динамічного роуту
+  const { handle } = await params;
 
-const activeChallenges = [
-  { title: "Ship a TypeScript project daily", category: "Engineering", streak: 48 },
-  { title: "Daily algorithm practice", category: "Engineering", streak: 12 },
-  { title: "365 days of sketching", category: "Design", streak: 365 },
-]
+  // 1. Шукаємо користувача в Aurora PostgreSQL за його унікальним handle
+  const user = await getUserByHandle(handle);
+  if (!user) {
+    notFound(); // Якщо користувача немає в базі — віддаємо 404 сторінку
+  }
 
-export default function ProfilePage({ params }: { params: { handle: string } }) {
-  const handle = params.handle
+  // 2. ОПТИМІЗАЦІЯ: завантажуємо дані з Aurora PG та DynamoDB паралельно
+  const [challenges, proofs, currentStreak, totalScore] = await Promise.all([
+    getChallengesByUserId(user.id, { publicOnly: true }), // Тільки публічні челенджі
+    getProofsByHandle(handle),
+    getCurrentStreak(handle),
+    getTotalProofScore(handle),
+  ]);
 
   return (
-    <AppShell>
-      <div className="container flex flex-col gap-8 py-10 lg:flex-row">
-        {/* Sidebar */}
-        <aside className="flex w-full flex-col gap-6 lg:w-72 lg:shrink-0">
-          <div className="flex flex-col gap-4">
-            <Avatar className="size-24">
-              <AvatarFallback className="bg-secondary text-2xl font-semibold">
-                {handle.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col gap-1">
-              <h1 className="text-xl font-semibold tracking-tight">Dev Loom</h1>
-              <p className="text-muted-foreground">@{handle}</p>
-            </div>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              Building in public, one verified proof at a time. Engineer focused
-              on TypeScript and developer tools.
-            </p>
-            <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <span className="flex items-center gap-2">
-                <MapPin className="size-4" />
-                Lisbon, Portugal
-              </span>
-              <span className="flex items-center gap-2">
-                <CalendarDays className="size-4" />
-                Joined March 2026
-              </span>
-              <Link
-                href="/u/devloom"
-                className="flex items-center gap-2 text-primary hover:underline"
-              >
-                <LinkIcon className="size-4" />
-                devloom.dev
-              </Link>
-            </div>
-            <Badge variant="outline" className="w-fit gap-1.5">
-              <Trophy className="size-3.5 text-primary" />
-              Ranked #2 globally
-            </Badge>
-          </div>
-        </aside>
-
-        {/* Main */}
-        <div className="flex flex-1 flex-col gap-6">
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {profileStats.map((stat) => (
-              <Card key={stat.label}>
-                <CardContent className="flex flex-col gap-1 pt-6">
-                  <span className="text-2xl font-semibold tracking-tight">
-                    {stat.value}
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    {stat.label}
-                  </span>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Heatmap */}
-          <Card>
-            <CardHeader className="flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-base">312 proofs in the last year</CardTitle>
-              <Badge variant="outline" className="gap-1.5">
-                <Flame className="size-3.5 text-primary" />
-                48 day streak
-              </Badge>
-            </CardHeader>
-            <CardContent>
-              <ContributionHeatmap />
-            </CardContent>
-          </Card>
-
-          {/* Active challenges */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Active challenges</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              {activeChallenges.map((c, i) => (
-                <div key={c.title}>
-                  {i > 0 && <Separator className="mb-3" />}
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-sm font-medium">{c.title}</span>
-                      <Badge variant="secondary" className="w-fit">
-                        {c.category}
-                      </Badge>
-                    </div>
-                    <Badge variant="outline" className="gap-1 shrink-0">
-                      <Flame className="size-3 text-primary" />
-                      {c.streak}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Recent proofs */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Recent proofs</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              {recentProofs.map((proof, i) => (
-                <div key={proof.id} className="flex flex-col gap-3">
-                  {i > 0 && <Separator />}
-                  <div className="flex items-center justify-between gap-3 pt-1">
-                    <div className="flex items-center gap-3">
-                      <Badge variant="secondary">Day {proof.day}</Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {proof.date}
-                      </span>
-                    </div>
-                    <Badge variant="outline" className="gap-1.5 font-mono text-primary">
-                      {proof.score}
-                      <span className="text-muted-foreground">/100</span>
-                    </Badge>
-                  </div>
-                  <p className="text-sm leading-relaxed">{proof.summary}</p>
-                  {proof.url && (
-                    <Link
-                      href={proof.url}
-                      className="inline-flex w-fit items-center gap-1.5 text-sm text-primary hover:underline"
-                    >
-                      <LinkIcon className="size-3.5" />
-                      {proof.url.replace("https://", "")}
-                    </Link>
-                  )}
-                  <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
-                    <p className="leading-relaxed">{proof.feedback}</p>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+    <div className="min-h-screen bg-zinc-950 text-zinc-50 pb-12">
+      {/* Навігація */}
+      <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center space-x-6">
+          <Link
+            href="/"
+            className="text-xl font-bold tracking-tight text-emerald-500"
+          >
+            ProofLoom
+          </Link>
+          <nav className="flex space-x-4 text-sm font-medium text-zinc-400">
+            <Link href="/dashboard" className="hover:text-zinc-200">
+              Dashboard
+            </Link>
+            <Link href="/leaderboard" className="hover:text-zinc-200">
+              Leaderboard
+            </Link>
+            <Link href="/pricing" className="hover:text-zinc-200">
+              Pricing
+            </Link>
+          </nav>
         </div>
-      </div>
-    </AppShell>
-  )
+      </header>
+
+      <main className="max-w-4xl mx-auto px-6 mt-12 space-y-8">
+        {/* Блок профілю користувача */}
+        <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-xl flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+            <div className="w-20 h-20 bg-emerald-600 rounded-full flex items-center justify-center text-3xl font-black text-white uppercase select-none">
+              {handle.substring(0, 2)}
+            </div>
+            <div className="text-center md:text-left space-y-2">
+              <h1 className="text-3xl font-extrabold tracking-tight">
+                {user.display_name || handle}
+              </h1>
+              <p className="text-sm text-zinc-400">@{handle}</p>
+              {user.bio && (
+                <p className="text-sm text-zinc-300 max-w-lg">{user.bio}</p>
+              )}
+              <p className="text-xs text-zinc-500">
+                Joined: {new Date(user.created_at).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+
+          {/* Швидкі метрики */}
+          <div className="grid grid-cols-2 gap-4 w-full md:w-auto">
+            <div className="bg-zinc-950 border border-zinc-800 px-4 py-3 rounded-lg text-center">
+              <span className="text-xs text-zinc-500 block uppercase tracking-wider font-semibold">
+                Streak
+              </span>
+              <span className="text-lg font-bold text-emerald-400">
+                {currentStreak} days
+              </span>
+            </div>
+            <div className="bg-zinc-950 border border-zinc-800 px-4 py-3 rounded-lg text-center">
+              <span className="text-xs text-zinc-500 block uppercase tracking-wider font-semibold">
+                Total Score
+              </span>
+              <span className="text-lg font-bold text-emerald-400">
+                {totalScore}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Плейсхолдер для календаря Heatmap (реалізуємо на Кроці 34) */}
+        <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl">
+          <h2 className="text-lg font-bold mb-4">Activity Heatmap</h2>
+          <div className="h-32 bg-zinc-950 rounded-lg flex items-center justify-center text-zinc-600 border border-dashed border-zinc-800">
+            [Heatmap Calendar Placeholder — coming at Step 34]
+          </div>
+        </div>
+
+        {/* Публічні челенджі профілю */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold">Active Challenges</h2>
+          {challenges.length === 0 ? (
+            <p className="text-sm text-zinc-500 italic">
+              No public challenges created yet.
+            </p>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-4">
+              {challenges.map((challenge) => {
+                const challengeProofs = proofs.filter(
+                  (p) => p.challenge_id === challenge.id,
+                );
+                const progressPercentage = Math.min(
+                  100,
+                  Math.round(
+                    (challengeProofs.length / challenge.target_days) * 100,
+                  ),
+                );
+
+                return (
+                  <div
+                    key={challenge.id}
+                    className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl flex flex-col justify-between"
+                  >
+                    <div>
+                      <span className="text-xs bg-zinc-800 border border-zinc-700 px-2.5 py-1 rounded-full text-zinc-300 font-semibold">
+                        {challenge.skill_category}
+                      </span>
+                      <h3 className="text-lg font-bold mt-3">
+                        {challenge.title}
+                      </h3>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                        <div
+                          className="bg-emerald-500 h-full"
+                          style={{ width: `${progressPercentage}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-xs text-zinc-500">
+                        <span>Progress: {progressPercentage}%</span>
+                        <span>Goal: {challenge.target_days} days</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
 }
