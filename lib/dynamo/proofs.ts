@@ -1,4 +1,4 @@
-import { PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { PutCommand, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { docClient } from "./client";
 
 export interface ProofRecord {
@@ -21,10 +21,11 @@ export async function submitProof(params: {
   streakDay: number;
   aiScore: number;
   aiComment: string;
+  skillCategory?: string; // Додано для запису в лідерборд
 }): Promise<void> {
-  // Визначаємо поточну дату в часовому поясі сервера (формат YYYY-MM-DD)
   const date = new Date().toISOString().split("T")[0];
 
+  // 1. Зберігаємо сам звіт
   await docClient.send(
     new PutCommand({
       TableName: "StreakProofs",
@@ -41,6 +42,28 @@ export async function submitProof(params: {
       },
     }),
   );
+
+  // 2. Одночасно оновлюємо лідерборд (Atomic Increment)
+  if (params.skillCategory) {
+    await docClient.send(
+      new UpdateCommand({
+        TableName: "StreakProofs",
+        Key: {
+          pk: "LEADERBOARD",
+          sk: `SCORE#${params.handle}#${params.skillCategory}`,
+        },
+        // ADD автоматично додає число до існуючого (або створює, якщо його нема)
+        UpdateExpression:
+          "ADD total_score :score SET handle = :handle, #cat = :cat",
+        ExpressionAttributeNames: { "#cat": "category" }, // Захист від зарезервованих слів
+        ExpressionAttributeValues: {
+          ":score": params.aiScore,
+          ":handle": params.handle,
+          ":cat": params.skillCategory,
+        },
+      }),
+    );
+  }
 }
 
 export async function getProofsByHandle(
@@ -54,7 +77,7 @@ export async function getProofsByHandle(
         ":pk": `USER#${handle}`,
         ":prefix": "PROOF#",
       },
-      ScanIndexForward: false, // Отримуємо найновіші записи першими (LIFO)
+      ScanIndexForward: false,
     }),
   );
 

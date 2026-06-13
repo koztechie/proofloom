@@ -77,7 +77,7 @@ export async function POST(request: Request) {
       proofUrl,
     );
 
-    // 7. Запис звіту в NoSQL базу DynamoDB
+    // 7. Запис звіту в NoSQL базу DynamoDB та оновлення лідерборду
     await submitProof({
       handle,
       challengeId,
@@ -86,6 +86,7 @@ export async function POST(request: Request) {
       streakDay,
       aiScore: evaluation.score,
       aiComment: evaluation.comment,
+      skillCategory: challenge.skill_category, // ЦЕЙ РЯДОК ДОДАНО
     });
 
     // 8. Повернення успішного результату
