@@ -3,7 +3,6 @@ import Credentials from "next-auth/providers/credentials";
 import { getUserByEmail } from "./db/users";
 import bcrypt from "bcryptjs";
 
-// Аугментація: вчимо TypeScript розуміти наші кастомні поля id та handle
 declare module "next-auth" {
   interface Session {
     user: {
@@ -24,7 +23,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // Базовий захист від порожніх запитів
         if (!credentials?.email || !credentials?.password) return null;
 
         const user = await getUserByEmail(credentials.email as string);
@@ -47,7 +45,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   session: { strategy: "jwt" },
   callbacks: {
-    // Переносимо дані з БД у зашифрований токен
+    // Коллбек авторизації для проксі-роутера (proxy.ts)
+    authorized({ auth, request: { nextUrl } }) {
+      const isLoggedIn = !!auth?.user;
+      const pathname = nextUrl.pathname;
+
+      // Визначаємо перелік закритих роутів
+      const isProtectedRoute =
+        pathname.startsWith("/dashboard") ||
+        pathname.startsWith("/challenge") ||
+        pathname.startsWith("/api/challenges") ||
+        pathname.startsWith("/api/proofs");
+
+      if (isProtectedRoute) {
+        if (isLoggedIn) return true;
+        return false; // Примусовий автоматичний редирект на /auth/login
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -55,7 +70,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return token;
     },
-    // Переносимо дані з токена у сесію для фронтенду
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
