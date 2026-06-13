@@ -5,6 +5,7 @@ import { getProofsByHandle } from "@/lib/dynamo/proofs";
 import { getCurrentStreak, getTotalProofScore } from "@/lib/dynamo/streaks";
 import Link from "next/link";
 import HeatmapCalendar from "@/components/HeatmapCalendar";
+import ProofList from "@/components/ProofList";
 
 interface PageProps {
   params: Promise<{ handle: string }>;
@@ -32,6 +33,22 @@ export default async function PublicProfilePage({ params }: PageProps) {
     date: p.sk.split("#")[1],
     score: p.ai_score,
   }));
+
+  // Збагачуємо NoSQL-звіти реляційними категоріями з Postgres та обрізаємо до 10 останніх
+  const enrichedProofs = proofs.map((p) => {
+    const ch = challenges.find((c) => c.id === p.challenge_id);
+    return {
+      ...p,
+      skill_category: ch ? ch.skill_category : "Other",
+    };
+  });
+
+  const heatmapData = enrichedProofs.map((p) => ({
+    date: p.sk.split("#")[1],
+    score: p.ai_score,
+  }));
+
+  const recentProofs = enrichedProofs.slice(0, 10);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 pb-12">
@@ -156,6 +173,11 @@ export default async function PublicProfilePage({ params }: PageProps) {
               })}
             </div>
           )}
+          {/* Стрічка останніх звітів користувача */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">Recent Proofs</h2>
+            <ProofList proofs={recentProofs} />
+          </div>
         </div>
       </main>
     </div>
