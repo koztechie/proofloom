@@ -56,7 +56,6 @@ export default function SubmissionForm({
         throw new Error(data.error || "Something went wrong.");
       }
 
-      // Оновлюємо локальний стан результатом запиту
       setActiveProof({
         pk: "",
         sk: "",
@@ -69,9 +68,8 @@ export default function SubmissionForm({
         submitted_at: new Date().toISOString(),
       });
 
-      // Запускаємо анімацію появи картки результату
       setShowAnimation(true);
-      router.refresh(); // Оновлюємо Next.js серверний кеш для дашборду
+      router.refresh();
     } catch (err: any) {
       setError(err.message || "Failed to submit proof.");
     } finally {
@@ -79,7 +77,6 @@ export default function SubmissionForm({
     }
   };
 
-  // РЕЖИМ READ-ONLY: якщо звіт сьогодні вже надіслано — показуємо результат оцінювання
   if (activeProof) {
     return (
       <div
@@ -151,7 +148,6 @@ export default function SubmissionForm({
     );
   }
 
-  // РЕЖИМ ФОРМИ: якщо звіту сьогодні ще немає
   return (
     <form
       onSubmit={handleSubmit}
@@ -177,7 +173,7 @@ export default function SubmissionForm({
             required
             value={proofText}
             onChange={(e) => setProofText(e.target.value)}
-            placeholder="Describe your progress today in detail. E.g., Wrote 3 SQL queries utilizing JOIN, aggregated sales data using GROUP BY, and tested execution plan."
+            placeholder="Describe your progress today in detail."
             className="block w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-3 text-zinc-100 placeholder-zinc-500 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
           />
           <p className="text-xs text-zinc-500 mt-2 flex justify-between">
@@ -206,7 +202,7 @@ export default function SubmissionForm({
             type="url"
             value={proofUrl}
             onChange={(e) => setProofUrl(e.target.value)}
-            placeholder="e.g. https://github.com/yourusername/project/commit/..."
+            placeholder="e.g. https://github.com/..."
             className="block w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-3 text-zinc-100 placeholder-zinc-500 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
           />
         </div>
