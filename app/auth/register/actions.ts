@@ -2,7 +2,6 @@
 
 import { createUser, getUserByEmail, getUserByHandle } from "@/lib/db/users";
 import { signIn } from "@/lib/auth";
-import { AuthError } from "next-auth";
 
 export async function registerUser(prevState: any, formData: FormData) {
   const email = formData.get("email") as string;
@@ -10,7 +9,6 @@ export async function registerUser(prevState: any, formData: FormData) {
   const password = formData.get("password") as string;
   const displayName = (formData.get("displayName") as string) || undefined;
 
-  // 1. Валідація заповнення обов'язкових полів
   if (!email || !handle || !password) {
     return { error: "Email, username, and password are required." };
   }
@@ -19,7 +17,6 @@ export async function registerUser(prevState: any, formData: FormData) {
     return { error: "Password must be at least 6 characters long." };
   }
 
-  // Валідація юзернейму (допускаємо лише латиницю, цифри та підкреслення)
   const handleRegex = /^[a-zA-Z0-9_]+$/;
   if (!handleRegex.test(handle)) {
     return {
@@ -27,38 +24,32 @@ export async function registerUser(prevState: any, formData: FormData) {
     };
   }
 
+  // 1. Блок роботи з базою даних (загортаємо в try-catch ТІЛЬКИ операції з Aurora PG)
   try {
-    // 2. Перевірка на унікальність пошти
     const existingEmail = await getUserByEmail(email);
     if (existingEmail) {
       return { error: "This email is already registered." };
     }
 
-    // 3. Перевірка на унікальність юзернейму
     const existingHandle = await getUserByHandle(handle);
     if (existingHandle) {
       return { error: "This username is already taken." };
     }
 
-    // 4. Створення користувача в базі Aurora PostgreSQL
     await createUser(handle, email, password, displayName);
-
-    // 5. Автоматичний вхід у систему після створення акаунту
-    await signIn("credentials", {
-      email,
-      password,
-      redirect: true,
-      redirectTo: "/dashboard",
-    });
-
-    return { success: true };
-  } catch (error) {
-    if (error instanceof AuthError) {
-      // КРИТИЧНО ДЛЯ NEXTAUTH: Редирект у Server Actions працює через викидання спеціальної помилки.
-      // Ми маємо прокинути її далі, інакше редирект на /dashboard зламається.
-      throw error;
-    }
-    console.error("Registration error:", error);
-    return { error: "Something went wrong during registration." };
+  } catch (error: any) {
+    console.error("Database Registration error:", error);
+    return {
+      error: `Database error: ${error.message || "Something went wrong."}`,
+    };
   }
+
+  // 2. Блок авторизації (викликаємо СТРОГО поза межами try-catch)
+  // Next.js виконає внутрішній редірект NEXT_REDIRECT без перехоплення
+  await signIn("credentials", {
+    email,
+    password,
+    redirect: true,
+    redirectTo: "/dashboard",
+  });
 }
