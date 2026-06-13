@@ -3,9 +3,9 @@ import { getUserByHandle } from "@/lib/db/users";
 import { getChallengesByUserId } from "@/lib/db/challenges";
 import { getProofsByHandle } from "@/lib/dynamo/proofs";
 import { getCurrentStreak, getTotalProofScore } from "@/lib/dynamo/streaks";
-import Link from "next/link";
 import HeatmapCalendar from "@/components/HeatmapCalendar";
 import ProofList from "@/components/ProofList";
+import Link from "next/link";
 
 interface PageProps {
   params: Promise<{ handle: string }>;
@@ -18,23 +18,18 @@ export default async function PublicProfilePage({ params }: PageProps) {
   // 1. Шукаємо користувача в Aurora PostgreSQL за його унікальним handle
   const user = await getUserByHandle(handle);
   if (!user) {
-    notFound(); // Якщо користувача немає в базі — віддаємо 404 сторінку
+    notFound(); // Якщо користувача немає в базі — 404
   }
 
   // 2. ОПТИМІЗАЦІЯ: завантажуємо дані з Aurora PG та DynamoDB паралельно
   const [challenges, proofs, currentStreak, totalScore] = await Promise.all([
-    getChallengesByUserId(user.id, { publicOnly: true }), // Тільки публічні челенджі
+    getChallengesByUserId(user.id, { publicOnly: true }),
     getProofsByHandle(handle),
     getCurrentStreak(handle),
     getTotalProofScore(handle),
   ]);
 
-  const heatmapData = proofs.map((p) => ({
-    date: p.sk.split("#")[1],
-    score: p.ai_score,
-  }));
-
-  // Збагачуємо NoSQL-звіти реляційними категоріями з Postgres та обрізаємо до 10 останніх
+  // 3. Збагачуємо NoSQL-звіти реляційними категоріями з Postgres
   const enrichedProofs = proofs.map((p) => {
     const ch = challenges.find((c) => c.id === p.challenge_id);
     return {
@@ -43,16 +38,18 @@ export default async function PublicProfilePage({ params }: PageProps) {
     };
   });
 
+  // 4. Створюємо чисті дані для календаря Heatmap
   const heatmapData = enrichedProofs.map((p) => ({
     date: p.sk.split("#")[1],
     score: p.ai_score,
   }));
 
+  // 5. Обрізаємо до 10 останніх звітів для виведення в стрічку
   const recentProofs = enrichedProofs.slice(0, 10);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 pb-12">
-      {/* Навігація */}
+      {/* Шапка */}
       <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-6">
           <Link
@@ -173,11 +170,12 @@ export default async function PublicProfilePage({ params }: PageProps) {
               })}
             </div>
           )}
-          {/* Стрічка останніх звітів користувача */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold">Recent Proofs</h2>
-            <ProofList proofs={recentProofs} />
-          </div>
+        </div>
+
+        {/* Стрічка останніх звітів користувача */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold">Recent Proofs</h2>
+          <ProofList proofs={recentProofs} />
         </div>
       </main>
     </div>
