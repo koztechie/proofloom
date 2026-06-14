@@ -7,6 +7,8 @@ import HeatmapCalendar from "@/components/HeatmapCalendar";
 import ProofList from "@/components/ProofList";
 import Link from "next/link";
 import { Metadata } from "next";
+import pool from "@/lib/db/client";
+import WeeklyCoachReport from "@/components/WeeklyCoachReport";
 
 interface PageProps {
   params: Promise<{ handle: string }>;
@@ -67,6 +69,18 @@ export default async function PublicProfilePage({ params }: PageProps) {
     getCurrentStreak(handle),
     getTotalProofScore(handle),
   ]);
+
+  // 3. Зчитуємо останній тижневий звіт користувача з Aurora PostgreSQL [E6]
+  const { rows: reportRows } = await pool.query(
+    `
+    SELECT * FROM weekly_reports
+    WHERE user_id = $1
+    ORDER BY week_start DESC
+    LIMIT 1
+  `,
+    [user.id],
+  );
+  const weeklyReport = reportRows[0] || null;
 
   // 3. Збагачуємо NoSQL-звіти реляційними категоріями з Postgres
   const enrichedProofs = proofs.map((p) => {
@@ -158,6 +172,18 @@ export default async function PublicProfilePage({ params }: PageProps) {
           <h2 className="text-lg font-bold mb-4">Activity Heatmap</h2>
           <HeatmapCalendar proofs={heatmapData} />
         </div>
+
+        {/* Реальний інтерактивний календар Heatmap */}
+        <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl">
+          <h2 className="text-lg font-bold mb-4">Activity Heatmap</h2>
+          <HeatmapCalendar proofs={heatmapData} />
+        </div>
+
+        {/* Блок тижневої аналітики від ШІ-коуча [E6] */}
+        <WeeklyCoachReport report={weeklyReport} />
+
+        {/* Публічні челенджі профілю */}
+        <div className="space-y-4"></div>
 
         {/* Публічні челенджі профілю */}
         <div className="space-y-4">
