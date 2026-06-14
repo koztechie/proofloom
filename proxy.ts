@@ -7,5 +7,6 @@ export const config = {
     "/challenge/:path*",
     "/api/challenges/:path*",
     "/api/proofs/:path*",
+    "/settings/:path*", // ДОДАНО
   ],
 };

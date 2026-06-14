@@ -5,6 +5,7 @@ import { getProofsByHandle } from "@/lib/dynamo/proofs";
 import { getCurrentStreak } from "@/lib/dynamo/streaks";
 import SubmissionForm from "./SubmissionForm";
 import Link from "next/link";
+import Header from "@/components/Header";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -42,28 +43,7 @@ export default async function ChallengePage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 pb-12">
       {/* Шапка */}
-      <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-6">
-          <Link
-            href="/"
-            className="text-xl font-bold tracking-tight text-emerald-500"
-          >
-            ProofLoom
-          </Link>
-          <nav className="flex space-x-4 text-sm font-medium text-zinc-400">
-            <Link href="/dashboard" className="hover:text-zinc-200">
-              Dashboard
-            </Link>
-            <Link href="/leaderboard" className="hover:text-zinc-200">
-              Leaderboard
-            </Link>
-            <Link href="/pricing" className="hover:text-zinc-200">
-              Pricing
-            </Link>
-          </nav>
-        </div>
-        <span className="text-sm text-zinc-400">@{handle}</span>
-      </header>
+      <Header />
 
       <main className="max-w-2xl mx-auto px-6 mt-12">
         <div className="space-y-4 mb-8">

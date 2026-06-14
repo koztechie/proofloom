@@ -6,6 +6,7 @@ import { getProofsByHandle } from "@/lib/dynamo/proofs";
 import Link from "next/link";
 import GenerateReportButton from "@/components/GenerateReportButton";
 import Logo from "@/components/logo";
+import Header from "@/components/Header";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -39,34 +40,7 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 pb-12">
       {/* Шапка / Навігація */}
-      <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-6">
-          <Logo />
-          <nav className="hidden md:flex space-x-4 text-sm font-medium text-zinc-400">
-            <Link href="/dashboard" className="text-zinc-100">
-              Dashboard
-            </Link>
-            <Link href="/leaderboard" className="hover:text-zinc-200">
-              Leaderboard
-            </Link>
-            <Link href={`/u/${handle}`} className="hover:text-zinc-200">
-              Profile
-            </Link>
-            <Link href="/pricing" className="hover:text-zinc-200">
-              Pricing
-            </Link>
-          </nav>
-        </div>
-        <div className="flex items-center space-x-4">
-          <span className="text-sm text-zinc-400">@{handle}</span>
-          <Link
-            href={`/u/${handle}`}
-            className="text-xs bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-lg border border-zinc-700 transition-colors"
-          >
-            View Profile
-          </Link>
-        </div>
-      </header>
+      <Header />
 
       <main className="max-w-6xl mx-auto px-6 mt-8 space-y-8">
         <div className="flex items-center justify-between">
