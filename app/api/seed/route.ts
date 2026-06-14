@@ -77,34 +77,33 @@ export async function GET() {
     const email = "koztechie@tuta.io";
     const passwordHash = await bcrypt.hash("StrongPass123", 10);
 
-    const userInsertQuery = `
+    const userResult = await pool.query(
+      `
       INSERT INTO users (handle, email, password_hash, display_name, bio)
       VALUES ($1, $2, $3, $4, $5)
       ON CONFLICT (handle) DO UPDATE SET display_name = EXCLUDED.display_name
       RETURNING id;
-    `;
-    const userResult = await pool.query(userInsertQuery, [
-      handle,
-      email,
-      passwordHash,
-      "Євгеній Козловський",
-      "Kyiv-based webmaster & e-commerce ecosystem architect. Building ProofLoom for H0 Hackathon.",
-    ]);
+    `,
+      [
+        handle,
+        email,
+        passwordHash,
+        "Євгеній Козловський",
+        "Kyiv-based webmaster & e-commerce ecosystem architect. Building ProofLoom for H0 Hackathon.",
+      ],
+    );
     const userId = userResult.rows[0].id;
 
     // 2. Створюємо челендж "SQL Mastery — 30 Days"
-    const challengeInsertQuery = `
+    const challengeResult = await pool.query(
+      `
       INSERT INTO challenges (user_id, title, skill_category, target_days)
       VALUES ($1, $2, $3, $4)
       ON CONFLICT DO NOTHING
       RETURNING id;
-    `;
-    const challengeResult = await pool.query(challengeInsertQuery, [
-      userId,
-      "SQL Mastery — 30 Days",
-      "SQL",
-      30,
-    ]);
+    `,
+      [userId, "SQL Mastery — 30 Days", "SQL", 30],
+    );
 
     let challengeId = challengeResult.rows[0]?.id;
     if (!challengeId) {
@@ -155,9 +154,38 @@ export async function GET() {
       }),
     );
 
+    // 5. Записуємо РЕАЛЬНИЙ тижневий звіт в Aurora PostgreSQL (Етап 8)
+    await pool.query(
+      `
+      INSERT INTO weekly_reports (
+        user_id, challenge_id, week_start, week_end,
+        proofs_submitted, avg_score, top_score, consistency_pct,
+        ai_summary, ai_strengths, ai_gaps, ai_recommendation
+      ) VALUES (
+        $1, $2, '2026-06-02', '2026-06-08',
+        7, 83.5, 94, 100.0,
+        'An exceptional week of consistent SQL practice with 7 submissions and an average score of 83.5. The work demonstrates solid progression from basic queries to complex subquery patterns.',
+        'Query specificity was outstanding — submissions consistently included actual SQL code rather than descriptions, and the use of NOT EXISTS and HAVING clauses showed real conceptual depth.',
+        'Window functions and CTEs were absent across all submissions. This is the natural next frontier given the current skill level.',
+        'Write one query using ROW_NUMBER() or RANK() over a partitioned dataset. Apply it to the orders table pattern you used in Day 6.'
+      )
+      ON CONFLICT (user_id, challenge_id, week_start)
+      DO UPDATE SET
+        proofs_submitted = EXCLUDED.proofs_submitted,
+        avg_score = EXCLUDED.avg_score,
+        top_score = EXCLUDED.top_score,
+        consistency_pct = EXCLUDED.consistency_pct,
+        ai_summary = EXCLUDED.ai_summary,
+        ai_strengths = EXCLUDED.ai_strengths,
+        ai_gaps = EXCLUDED.ai_gaps,
+        ai_recommendation = EXCLUDED.ai_recommendation;
+    `,
+      [userId, challengeId],
+    );
+
     return NextResponse.json({
       success: true,
-      message: `Database successfully seeded for ${handle}! Created SQL challenge and generated ${PROOFS_DATA.length}-day unbroken streak.`,
+      message: `Database successfully seeded for ${handle}! Created SQL challenge, 9-day streak, and loaded historical weekly report.`,
     });
   } catch (error: any) {
     console.error("Seeding error:", error);
