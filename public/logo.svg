@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="140"
+   height="140"
+   viewBox="0 0 140 140"
+   fill="none"
+   version="1.1"
+   id="svg19"
+   sodipodi:docname="logo.svg"
+   inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <title
+     id="title19">ProofLoom Official Logo</title>
+  <defs
+     id="defs19">
+    <color-profile
+       name="sRGB"
+       xlink:href="file:///usr/share/color/icc/colord/sRGB.icc"
+       id="color-profile1" />
+  </defs>
+  <sodipodi:namedview
+     id="namedview19"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="6.4214286"
+     inkscape:cx="70"
+     inkscape:cy="70"
+     inkscape:window-width="1920"
+     inkscape:window-height="1144"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg19"
+     showguides="false" />
+  <rect
+     x="0"
+     y="0"
+     width="140"
+     height="140"
+     rx="32"
+     fill="#061309"
+     id="rect1" />
+  <rect
+     x="14"
+     y="14"
+     width="24"
+     height="24"
+     rx="5"
+     fill="#0C2613"
+     id="rect2" />
+  <rect
+     x="44"
+     y="14"
+     width="24"
+     height="24"
+     rx="5"
+     fill="#143D1F"
+     id="rect3" />
+  <rect
+     x="74"
+     y="14"
+     width="24"
+     height="24"
+     rx="5"
+     fill="#1E5B2F"
+     id="rect4" />
+  <rect
+     x="104"
+     y="14"
+     width="24"
+     height="24"
+     rx="5"
+     fill="#143D1F"
+     id="rect5" />
+  <rect
+     x="14"
+     y="44"
+     width="24"
+     height="24"
+     rx="5"
+     fill="#143D1F"
+     id="rect6" />
+  <rect
+     x="44"
+     y="44"
+     width="24"
+     height="24"
+     rx="5"
+     fill="#1E5B2F"
+     id="rect7" />
+  <rect
+     x="74"
+     y="44"
+     width="24"
+     height="24"
+     rx="5"
+     fill="#2B8243"
+     id="rect8" />
+  <rect
+     x="104"
+     y="44"
+     width="24"
+     height="24"
+     rx="5"
+     fill="#39AC59"
+     id="rect9" />
+  <rect
+     x="14"
+     y="74"
+     width="24"
+     height="24"
+     rx="5"
+     fill="#1E5B2F"
+     id="rect10" />
+  <rect
+     x="44"
+     y="74"
+     width="24"
+     height="24"
+     rx="5"
+     fill="#2B8243"
+     id="rect11" />
+  <rect
+     x="74"
+     y="74"
+     width="24"
+     height="24"
+     rx="5"
+     fill="#39AC59"
+     id="rect12" />
+  <rect
+     x="104"
+     y="74"
+     width="24"
+     height="24"
+     rx="5"
+     fill="#56C676"
+     id="rect13" />
+  <rect
+     x="14"
+     y="104"
+     width="24"
+     height="24"
+     rx="5"
+     fill="#143D1F"
+     id="rect14" />
+  <rect
+     x="44"
+     y="104"
+     width="24"
+     height="24"
+     rx="5"
+     fill="#2B8243"
+     id="rect15" />
+  <rect
+     x="74"
+     y="104"
+     width="24"
+     height="24"
+     rx="5"
+     fill="#39AC59"
+     id="rect16" />
+  <rect
+     x="104"
+     y="104"
+     width="24"
+     height="24"
+     rx="6"
+     fill="#5ec97c"
+     id="rect19"
+     style="display:inline" />
+  <metadata
+     id="metadata19">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <cc:license
+           rdf:resource="https://proofloom.vercel.app/" />
+        <dc:title>ProofLoom Official Logo</dc:title>
+        <dc:date>2026-06-14</dc:date>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>Yevhenii Kozlovskyi (koztechie)</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <dc:rights>
+          <cc:Agent>
+            <dc:title>Copyright © 2026 Yevhenii Kozlovskyi. All rights reserved. Unauthorized duplication or use is prohibited.</dc:title>
+          </cc:Agent>
+        </dc:rights>
+        <dc:publisher>
+          <cc:Agent>
+            <dc:title>ProofLoom</dc:title>
+          </cc:Agent>
+        </dc:publisher>
+        <dc:identifier>https://proofloom.vercel.app/logo.svg</dc:identifier>
+        <dc:source>https://github.com/koztechie/proofloom</dc:source>
+        <dc:relation>https://proofloom.vercel.app/</dc:relation>
+        <dc:language>en</dc:language>
+        <dc:subject>
+          <rdf:Bag>
+            <rdf:li>proofloom</rdf:li>
+            <rdf:li>logo</rdf:li>
+            <rdf:li>branding</rdf:li>
+            <rdf:li>habit tracker</rdf:li>
+            <rdf:li>skill building</rdf:li>
+            <rdf:li>aws</rdf:li>
+            <rdf:li>vercel</rdf:li>
+            <rdf:li>h0 hackathon</rdf:li>
+          </rdf:Bag>
+        </dc:subject>
+        <dc:coverage>Global</dc:coverage>
+        <dc:description>Official brand logo for ProofLoom — an AI-verified skill-building tracker with a live leaderboard. Created for the H0: Hack the Zero Stack Hackathon 2026.</dc:description>
+        <dc:contributor>
+          <cc:Agent>
+            <dc:title>Vercel v0</dc:title>
+          </cc:Agent>
+        </dc:contributor>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+</svg>

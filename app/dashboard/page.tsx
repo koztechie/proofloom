@@ -5,6 +5,7 @@ import { getCurrentStreak, getTotalProofScore } from "@/lib/dynamo/streaks";
 import { getProofsByHandle } from "@/lib/dynamo/proofs";
 import Link from "next/link";
 import GenerateReportButton from "@/components/GenerateReportButton";
+import Logo from "@/components/logo";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -40,12 +41,7 @@ export default async function DashboardPage() {
       {/* Шапка / Навігація */}
       <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-6">
-          <Link
-            href="/"
-            className="text-xl font-bold tracking-tight text-emerald-500"
-          >
-            ProofLoom
-          </Link>
+          <Logo />
           <nav className="hidden md:flex space-x-4 text-sm font-medium text-zinc-400">
             <Link href="/dashboard" className="text-zinc-100">
               Dashboard
