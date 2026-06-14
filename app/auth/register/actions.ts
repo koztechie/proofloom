@@ -2,6 +2,7 @@
 
 import { createUser, getUserByEmail, getUserByHandle } from "@/lib/db/users";
 import { signIn } from "@/lib/auth";
+import { isReservedHandle } from "@/lib/reservedWords";
 
 export async function registerUser(prevState: any, formData: FormData) {
   const email = formData.get("email") as string;
@@ -22,6 +23,11 @@ export async function registerUser(prevState: any, formData: FormData) {
     return {
       error: "Username can only contain letters, numbers, and underscores.",
     };
+  }
+
+  // Заборона використання системних та зарезервованих слів
+  if (isReservedHandle(handle)) {
+    return { error: "This username is reserved for system use." };
   }
 
   // 1. Блок роботи з базою даних (загортаємо в try-catch ТІЛЬКИ операції з Aurora PG)
