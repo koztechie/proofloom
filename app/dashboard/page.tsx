@@ -4,6 +4,7 @@ import { getChallengesByUserId } from "@/lib/db/challenges";
 import { getCurrentStreak, getTotalProofScore } from "@/lib/dynamo/streaks";
 import { getProofsByHandle } from "@/lib/dynamo/proofs";
 import Link from "next/link";
+import GenerateReportButton from "@/components/GenerateReportButton";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -82,12 +83,15 @@ export default async function DashboardPage() {
             </p>
           </div>
           {/* Кнопка створення веде на сторінку форми, яку ми створимо на Кроці 31 */}
-          <Link
-            href="/dashboard/new"
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition-colors flex items-center space-x-2"
-          >
-            <span>+ New challenge</span>
-          </Link>
+          <div className="flex items-center space-x-4">
+            <GenerateReportButton />
+            <Link
+              href="/dashboard/new"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition-colors flex items-center space-x-2"
+            >
+              <span>+ New challenge</span>
+            </Link>
+          </div>
         </div>
 
         {/* Метрики (Stats Grid) */}
