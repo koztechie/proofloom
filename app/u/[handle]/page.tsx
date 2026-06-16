@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { notFound } from "next/navigation";
 import { getUserByHandle } from "@/lib/db/users";
 import { getChallengesByUserId } from "@/lib/db/challenges";
@@ -71,6 +72,14 @@ export default async function PublicProfilePage({ params }: PageProps) {
     getTotalProofScore(handle),
   ]);
 
+  // Генеруємо хеш пошти для завантаження Gravatar аватара
+  const emailHash = crypto
+    .createHash("md5")
+    .update(user.email.toLowerCase().trim())
+    .digest("hex");
+  const gravatarUrl = `https://www.gravatar.com/avatar/${emailHash}?d=identicon&s=150`;
+  const useGravatar = user.avatar_type === "gravatar";
+
   // 3. Зчитуємо останній тижневий звіт користувача з Aurora PostgreSQL [E6]
   const { rows: reportRows } = await pool.query(
     `
@@ -110,20 +119,83 @@ export default async function PublicProfilePage({ params }: PageProps) {
         {/* Блок профілю користувача */}
         <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-xl flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-            <div className="w-20 h-20 bg-emerald-600 rounded-full flex items-center justify-center text-3xl font-black text-white uppercase select-none">
-              {handle.substring(0, 2)}
-            </div>
+            {useGravatar ? (
+              <img
+                src={gravatarUrl}
+                alt={user.display_name || handle}
+                className="w-20 h-20 rounded-full border-2 border-emerald-500 shadow-lg object-cover"
+              />
+            ) : (
+              <div className="w-20 h-20 bg-emerald-600 rounded-full flex items-center justify-center text-3xl font-black text-white uppercase select-none">
+                {handle.substring(0, 2)}
+              </div>
+            )}
             <div className="text-center md:text-left space-y-2">
-              <h1 className="text-3xl font-extrabold tracking-tight">
+              <h1 className="text-3xl font-extrabold tracking-tight text-zinc-100">
                 {user.display_name || handle}
               </h1>
               <p className="text-sm text-zinc-400">@{handle}</p>
+
               {user.bio && (
-                <p className="text-sm text-zinc-300 max-w-lg">{user.bio}</p>
+                <p className="text-sm text-zinc-300 max-w-lg italic">
+                  "{user.bio}"
+                </p>
               )}
-              <p className="text-xs text-zinc-500">
-                Joined: {new Date(user.created_at).toLocaleDateString()}
-              </p>
+
+              <div className="flex flex-wrap justify-center md:justify-start gap-4 text-xs text-zinc-500 pt-1">
+                {user.location && (
+                  <span className="flex items-center gap-1">
+                    📍 {user.location}
+                  </span>
+                )}
+                {user.website_url && (
+                  <a
+                    href={user.website_url}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow noindex"
+                    className="text-emerald-500 hover:underline flex items-center gap-1"
+                  >
+                    🔗 Website
+                  </a>
+                )}
+                <span>
+                  📅 Joined: {new Date(user.created_at).toLocaleDateString()}
+                </span>
+              </div>
+
+              {/* Соціалки з SEO-захистом від спаму */}
+              <div className="flex justify-center md:justify-start gap-3 pt-2">
+                {user.github_url && (
+                  <a
+                    href={user.github_url}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow noindex"
+                    className="text-xs text-zinc-400 hover:text-zinc-200"
+                  >
+                    GitHub
+                  </a>
+                )}
+                {user.twitter_url && (
+                  <a
+                    href={user.twitter_url}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow noindex"
+                    className="text-xs text-zinc-400 hover:text-zinc-200"
+                  >
+                    Twitter
+                  </a>
+                )}
+                {user.linkedin_url && (
+                  <a
+                    href={user.linkedin_url}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow noindex"
+                    className="text-xs text-zinc-400 hover:text-zinc-200"
+                  >
+                    LinkedIn
+                  </a>
+                )}
+              </div>
             </div>
           </div>
 

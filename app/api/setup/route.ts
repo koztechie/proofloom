@@ -16,6 +16,12 @@ export async function GET() {
         display_name TEXT,
         bio TEXT,
         avatar_url TEXT,
+        location TEXT,
+        website_url TEXT,
+        twitter_url TEXT,
+        github_url TEXT,
+        linkedin_url TEXT,
+        avatar_type TEXT DEFAULT 'initials',
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
 

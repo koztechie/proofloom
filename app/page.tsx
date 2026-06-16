@@ -1,4 +1,5 @@
-import Link from "next/link"
+import Header from "@/components/Header";
+import Link from "next/link";
 import {
   ArrowRight,
   Bot,
@@ -8,19 +9,18 @@ import {
   LineChart,
   ShieldCheck,
   Trophy,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { SiteHeader } from "@/components/site-header"
-import { SiteFooter } from "@/components/site-footer"
-import { ContributionHeatmap } from "@/components/contribution-heatmap"
+} from "@/components/ui/card";
+import { SiteFooter } from "@/components/site-footer";
+import { ContributionHeatmap } from "@/components/contribution-heatmap";
 
 const features = [
   {
@@ -59,7 +59,7 @@ const features = [
     description:
       "See score trends, completion rate, and momentum across every challenge you take on.",
   },
-]
+];
 
 const steps = [
   {
@@ -77,17 +77,20 @@ const steps = [
     title: "Get AI verified",
     description: "Receive a score and feedback, then climb the leaderboard.",
   },
-]
+];
 
 export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
+      <Header />
       <main className="flex-1">
         {/* Hero */}
         <section className="border-b border-border">
           <div className="container flex flex-col items-center gap-8 py-20 text-center md:py-28">
-            <Badge variant="secondary" className="gap-1.5 rounded-full px-3 py-1">
+            <Badge
+              variant="secondary"
+              className="gap-1.5 rounded-full px-3 py-1"
+            >
               <Flame className="size-3.5 text-primary" />
               Build skills in public
             </Badge>
@@ -116,7 +119,9 @@ export default function HomePage() {
             <Card className="mt-8 w-full max-w-3xl text-left">
               <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
                 <div className="flex flex-col gap-1">
-                  <CardTitle className="text-base">312 proofs this year</CardTitle>
+                  <CardTitle className="text-base">
+                    312 proofs this year
+                  </CardTitle>
                   <CardDescription>
                     Consistency compounds. Here&apos;s what a year looks like.
                   </CardDescription>
@@ -174,7 +179,9 @@ export default function HomePage() {
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               {steps.map((item) => (
                 <div key={item.step} className="flex flex-col gap-3">
-                  <span className="font-mono text-sm text-primary">{item.step}</span>
+                  <span className="font-mono text-sm text-primary">
+                    {item.step}
+                  </span>
                   <h3 className="text-xl font-medium">{item.title}</h3>
                   <p className="leading-relaxed text-muted-foreground">
                     {item.description}
@@ -194,8 +201,8 @@ export default function HomePage() {
                   Your next skill is one daily proof away
                 </h2>
                 <p className="max-w-lg text-pretty text-muted-foreground">
-                  Join builders who show up every day. Start your first challenge
-                  in under a minute.
+                  Join builders who show up every day. Start your first
+                  challenge in under a minute.
                 </p>
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <Button size="lg" asChild>
@@ -215,5 +222,5 @@ export default function HomePage() {
       </main>
       <SiteFooter />
     </div>
-  )
+  );
 }
