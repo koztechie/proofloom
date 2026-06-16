@@ -1,6 +1,6 @@
 import NextAuth, { DefaultSession } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { getUserByEmail } from "./db/users";
+import { getUserByEmail, getUserByHandle } from "./db/users";
 import bcrypt from "bcryptjs";
 
 declare module "next-auth" {
