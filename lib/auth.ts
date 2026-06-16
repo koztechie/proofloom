@@ -25,7 +25,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const user = await getUserByEmail(credentials.email as string);
+        const identifier = credentials.email as string;
+
+        // Антикрихкість: автоматично визначаємо тип ідентифікатора
+        const user = identifier.includes("@")
+          ? await getUserByEmail(identifier)
+          : await getUserByHandle(identifier);
+
         if (!user) return null;
 
         const valid = await bcrypt.compare(
