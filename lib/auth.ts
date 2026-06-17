@@ -51,24 +51,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   session: { strategy: "jwt" },
   callbacks: {
-    // Коллбек авторизації для проксі-роутера (proxy.ts)
-    authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user;
-      const pathname = nextUrl.pathname;
-
-      // Визначаємо перелік закритих роутів
-      const isProtectedRoute =
-        pathname.startsWith("/dashboard") ||
-        pathname.startsWith("/challenge") ||
-        pathname.startsWith("/api/challenges") ||
-        pathname.startsWith("/api/proofs");
-
-      if (isProtectedRoute) {
-        if (isLoggedIn) return true;
-        return false; // Примусовий автоматичний редирект на /auth/login
-      }
-      return true;
-    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;

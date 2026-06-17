@@ -1,7 +1,35 @@
 import type { Metadata } from "next"
-import { GeistSans } from "geist/font/sans"
-import { GeistMono } from "geist/font/mono"
+import localFont from "next/font/local"
 import "./globals.css"
+
+// geist@1.0.0 uses the legacy @next/font API which is incompatible with Next.js 16.
+// We load the woff2 files directly via next/font/local instead.
+const GeistSans = localFont({
+  src: [
+    { path: "../node_modules/geist/dist/fonts/geist-sans/Geist-Thin.woff2", weight: "100", style: "normal" },
+    { path: "../node_modules/geist/dist/fonts/geist-sans/Geist-UltraLight.woff2", weight: "200", style: "normal" },
+    { path: "../node_modules/geist/dist/fonts/geist-sans/Geist-Light.woff2", weight: "300", style: "normal" },
+    { path: "../node_modules/geist/dist/fonts/geist-sans/Geist-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../node_modules/geist/dist/fonts/geist-sans/Geist-Medium.woff2", weight: "500", style: "normal" },
+    { path: "../node_modules/geist/dist/fonts/geist-sans/Geist-SemiBold.woff2", weight: "600", style: "normal" },
+    { path: "../node_modules/geist/dist/fonts/geist-sans/Geist-Bold.woff2", weight: "700", style: "normal" },
+    { path: "../node_modules/geist/dist/fonts/geist-sans/Geist-Black.woff2", weight: "900", style: "normal" },
+  ],
+  variable: "--font-geist-sans",
+})
+
+const GeistMono = localFont({
+  src: [
+    { path: "../node_modules/geist/dist/fonts/geist-mono/GeistMono-Thin.woff2", weight: "100", style: "normal" },
+    { path: "../node_modules/geist/dist/fonts/geist-mono/GeistMono-Light.woff2", weight: "300", style: "normal" },
+    { path: "../node_modules/geist/dist/fonts/geist-mono/GeistMono-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../node_modules/geist/dist/fonts/geist-mono/GeistMono-Medium.woff2", weight: "500", style: "normal" },
+    { path: "../node_modules/geist/dist/fonts/geist-mono/GeistMono-SemiBold.woff2", weight: "600", style: "normal" },
+    { path: "../node_modules/geist/dist/fonts/geist-mono/GeistMono-Bold.woff2", weight: "700", style: "normal" },
+    { path: "../node_modules/geist/dist/fonts/geist-mono/GeistMono-Black.woff2", weight: "900", style: "normal" },
+  ],
+  variable: "--font-geist-mono",
+})
 
 export const metadata: Metadata = {
   title: "ProofLoom — AI-Verified Skill Tracking",

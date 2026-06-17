@@ -1,17 +1,45 @@
-import pool from "./client";
+/**
+ * lib/db/challenges.ts
+ *
+ * @deprecated These are thin compatibility wrappers around the new
+ * `lib/db/repositories/challenge.repository.ts`. Existing call sites continue
+ * to work without modification. Migrate new code to import directly from the
+ * repository module.
+ */
 
-export interface Challenge {
+import * as challengeRepo from "./repositories/challenge.repository";
+
+// Re-export the canonical row type under the legacy name.
+// Field nullability matches the original interface so no call-site changes
+// are required in dashboard/profile pages.
+export type Challenge = {
   id: string;
   user_id: string;
   title: string;
   skill_category: string;
-  target_days: number;
-  start_date: Date;
-  is_public: boolean;
+  target_days: number;       // non-null: fallback to 30
+  start_date: string | null;
+  is_public: boolean;        // non-null: fallback to true
   streak_broken_at: Date | null;
-  created_at: Date;
+  created_at: Date;          // non-null: fallback to epoch
+};
+
+/** Maps a Drizzle camelCase row to the snake_case legacy shape. */
+function toChallenge(row: challengeRepo.ChallengeRow): Challenge {
+  return {
+    id: row.id,
+    user_id: row.userId,
+    title: row.title,
+    skill_category: row.skillCategory,
+    target_days: row.targetDays ?? 30,
+    start_date: row.startDate ?? null,
+    is_public: row.isPublic ?? true,
+    streak_broken_at: row.streakBrokenAt ?? null,
+    created_at: row.createdAt ?? new Date(0),
+  };
 }
 
+/** @deprecated Use challengeRepo.create() directly. */
 export async function createChallenge(
   userId: string,
   title: string,
@@ -19,50 +47,30 @@ export async function createChallenge(
   targetDays: number = 30,
   isPublic: boolean = true,
 ): Promise<Challenge> {
-  const query = `
-    INSERT INTO challenges (user_id, title, skill_category, target_days, is_public)
-    VALUES ($1, $2, $3, $4, $5)
-    RETURNING *;
-  `;
-  const values = [userId, title, skillCategory, targetDays, isPublic];
-
-  const { rows } = await pool.query(query, values);
-  return rows[0];
+  const row = await challengeRepo.create({ userId, title, skillCategory, targetDays, isPublic });
+  return toChallenge(row);
 }
 
+/** @deprecated Use challengeRepo.getByUser() directly. */
 export async function getChallengesByUserId(
   userId: string,
   options?: { publicOnly?: boolean },
 ): Promise<Challenge[]> {
-  let query = "SELECT * FROM challenges WHERE user_id = $1";
-  const values: any[] = [userId];
-
-  if (options?.publicOnly) {
-    query += " AND is_public = TRUE";
-  }
-
-  query += " ORDER BY created_at DESC;";
-
-  const { rows } = await pool.query(query, values);
-  return rows;
+  const rows = await challengeRepo.getByUser(userId, options);
+  return rows.map(toChallenge);
 }
 
+/** @deprecated Use challengeRepo.getById() directly. */
 export async function getChallengeById(id: string): Promise<Challenge | null> {
-  const query = "SELECT * FROM challenges WHERE id = $1 LIMIT 1;";
-  const { rows } = await pool.query(query, [id]);
-  return rows[0] || null;
+  const row = await challengeRepo.getById(id);
+  return row ? toChallenge(row) : null;
 }
 
+/** @deprecated Use challengeRepo.getPublic() directly. */
 export async function getPublicChallengesByCategory(
   category: string,
   limit: number = 20,
 ): Promise<Challenge[]> {
-  const query = `
-    SELECT * FROM challenges 
-    WHERE is_public = TRUE AND skill_category = $1 
-    ORDER BY created_at DESC 
-    LIMIT $2;
-  `;
-  const { rows } = await pool.query(query, [category, limit]);
-  return rows;
+  const rows = await challengeRepo.getPublic(category, limit);
+  return rows.map(toChallenge);
 }

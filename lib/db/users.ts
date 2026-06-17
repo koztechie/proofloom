@@ -1,7 +1,18 @@
-import pool from "./client";
-import bcrypt from "bcryptjs";
+/**
+ * lib/db/users.ts
+ *
+ * @deprecated These are thin compatibility wrappers around the new
+ * `lib/db/repositories/user.repository.ts`. Existing call sites continue to
+ * work without modification. Migrate new code to import directly from the
+ * repository module.
+ */
 
-export interface User {
+import bcrypt from "bcryptjs";
+import * as userRepo from "./repositories/user.repository";
+
+// Re-export the canonical row type under the legacy name so existing
+// consumers that rely on this interface keep compiling unchanged.
+export type User = {
   id: string;
   handle: string;
   email: string;
@@ -15,9 +26,30 @@ export interface User {
   github_url: string | null;
   linkedin_url: string | null;
   avatar_type: string;
-  created_at: Date;
+  created_at: Date;          // non-null: fallback to epoch
+};
+
+/** Maps a Drizzle camelCase row to the snake_case legacy shape. */
+function toUser(row: userRepo.UserRow): User {
+  return {
+    id: row.id,
+    handle: row.handle,
+    email: row.email,
+    password_hash: row.passwordHash,
+    display_name: row.displayName ?? null,
+    bio: row.bio ?? null,
+    avatar_url: row.avatarUrl ?? null,
+    location: row.location ?? null,
+    website_url: row.websiteUrl ?? null,
+    twitter_url: row.twitterUrl ?? null,
+    github_url: row.githubUrl ?? null,
+    linkedin_url: row.linkedinUrl ?? null,
+    avatar_type: row.avatarType,
+    created_at: row.createdAt ?? new Date(0),
+  };
 }
 
+/** @deprecated Use userRepo.create() directly. */
 export async function createUser(
   handle: string,
   email: string,
@@ -25,16 +57,16 @@ export async function createUser(
   displayName?: string,
 ): Promise<User> {
   const passwordHash = await bcrypt.hash(passwordPlain, 10);
-  const query = `
-    INSERT INTO users (handle, email, password_hash, display_name)
-    VALUES ($1, $2, $3, $4)
-    RETURNING *;
-  `;
-  const values = [handle, email, passwordHash, displayName || null];
-  const { rows } = await pool.query(query, values);
-  return rows[0];
+  const row = await userRepo.create({
+    handle,
+    email,
+    passwordHash,
+    displayName: displayName ?? null,
+  });
+  return toUser(row);
 }
 
+/** @deprecated Use userRepo.updateProfile() directly. */
 export async function updateUserProfile(
   id: string,
   params: {
@@ -48,49 +80,24 @@ export async function updateUserProfile(
     avatarType?: string;
   },
 ): Promise<User> {
-  const query = `
-    UPDATE users
-    SET 
-      display_name = $2,
-      bio = $3,
-      location = $4,
-      website_url = $5,
-      twitter_url = $6,
-      github_url = $7,
-      linkedin_url = $8,
-      avatar_type = $9
-    WHERE id = $1
-    RETURNING *;
-  `;
-  const values = [
-    id,
-    params.displayName || null,
-    params.bio || null,
-    params.location || null,
-    params.websiteUrl || null,
-    params.twitterUrl || null,
-    params.githubUrl || null,
-    params.linkedinUrl || null,
-    params.avatarType || "initials",
-  ];
-  const { rows } = await pool.query(query, values);
-  return rows[0];
+  const row = await userRepo.updateProfile(id, params);
+  return toUser(row);
 }
 
+/** @deprecated Use userRepo.getByHandle() directly. */
 export async function getUserByHandle(handle: string): Promise<User | null> {
-  const query = "SELECT * FROM users WHERE handle = $1 LIMIT 1;";
-  const { rows } = await pool.query(query, [handle]);
-  return rows[0] || null;
+  const row = await userRepo.getByHandle(handle);
+  return row ? toUser(row) : null;
 }
 
+/** @deprecated Use userRepo.getByEmail() directly. */
 export async function getUserByEmail(email: string): Promise<User | null> {
-  const query = "SELECT * FROM users WHERE email = $1 LIMIT 1;";
-  const { rows } = await pool.query(query, [email]);
-  return rows[0] || null;
+  const row = await userRepo.getByEmail(email);
+  return row ? toUser(row) : null;
 }
 
+/** @deprecated Use userRepo.getById() directly. */
 export async function getUserById(id: string): Promise<User | null> {
-  const query = "SELECT * FROM users WHERE id = $1 LIMIT 1;";
-  const { rows } = await pool.query(query, [id]);
-  return rows[0] || null;
+  const row = await userRepo.getById(id);
+  return row ? toUser(row) : null;
 }
