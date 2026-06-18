@@ -1,36 +1,45 @@
 "use server";
 
+/**
+ * app/auth/register/actions.ts
+ *
+ * Server Action for user registration.
+ * Validates FormData against UserRegistrationSchema before any DB write.
+ */
+
 import { createUser, getUserByEmail, getUserByHandle } from "@/lib/db/users";
 import { signIn } from "@/lib/auth";
 import { isReservedHandle } from "@/lib/reservedWords";
+import { UserRegistrationSchema } from "@/lib/validation/schemas";
 
 export async function registerUser(prevState: unknown, formData: FormData) {
-  const email = formData.get("email") as string;
-  const handle = formData.get("handle") as string;
-  const password = formData.get("password") as string;
-  const displayName = (formData.get("displayName") as string) || undefined;
+  // ── 1. Zod schema validation ─────────────────────────────────────────────
+  const raw = {
+    email: formData.get("email"),
+    handle: formData.get("handle"),
+    password: formData.get("password"),
+    // displayName is optional — omit the key if empty to match schema's .optional()
+    ...(formData.get("displayName")
+      ? { displayName: formData.get("displayName") }
+      : {}),
+  };
 
-  if (!email || !handle || !password) {
-    return { error: "Email, username, and password are required." };
-  }
-
-  if (password.length < 6) {
-    return { error: "Password must be at least 6 characters long." };
-  }
-
-  const handleRegex = /^[a-zA-Z0-9_]+$/;
-  if (!handleRegex.test(handle)) {
+  const parsed = UserRegistrationSchema.safeParse(raw);
+  if (!parsed.success) {
+    const firstIssue = parsed.error.issues[0];
     return {
-      error: "Username can only contain letters, numbers, and underscores.",
+      error: firstIssue?.message ?? "Invalid registration data.",
     };
   }
 
-  // Заборона використання системних та зарезервованих слів
+  const { email, handle, password, displayName } = parsed.data;
+
+  // ── 2. Domain-level guard: reserved handles ──────────────────────────────
   if (isReservedHandle(handle)) {
     return { error: "This username is reserved for system use." };
   }
 
-  // 1. Блок роботи з базою даних (загортаємо в try-catch ТІЛЬКИ операції з Aurora PG)
+  // ── 3. Uniqueness checks (DB round-trips — wrapped in try-catch) ─────────
   try {
     const existingEmail = await getUserByEmail(email);
     if (existingEmail) {
@@ -43,15 +52,16 @@ export async function registerUser(prevState: unknown, formData: FormData) {
     }
 
     await createUser(handle, email, password, displayName);
-  } catch (error: any) {
-    console.error("Database Registration error:", error);
-    return {
-      error: `Database error: ${error.message || "Something went wrong."}`,
-    };
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Something went wrong.";
+    console.error("Database registration error:", error);
+    return { error: `Database error: ${message}` };
   }
 
-  // 2. Блок авторизації (викликаємо СТРОГО поза межами try-catch)
-  // Next.js виконає внутрішній редірект NEXT_REDIRECT без перехоплення
+  // ── 4. Auto sign-in after successful registration ────────────────────────
+  // signIn() must be called OUTSIDE try-catch — Next.js throws a NEXT_REDIRECT
+  // internally which must not be swallowed by a catch block.
   await signIn("credentials", {
     email,
     password,
