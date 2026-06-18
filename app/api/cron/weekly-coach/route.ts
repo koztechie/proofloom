@@ -1,74 +1,96 @@
-import { NextRequest, NextResponse } from "next/server";
+/**
+ * app/api/cron/weekly-coach/route.ts
+ *
+ * Cron job: generates AI weekly-coach reports for every user with an active
+ * public challenge. Runs on a Monday schedule (configured in vercel.json).
+ *
+ * Protected by CRON_SECRET (Vercel sets this header automatically).
+ * Wrapped with withApiErrorHandler for consistent error envelopes and logging.
+ *
+ * Per-user failures are logged and silenced so one user's quota limit cannot
+ * block the rest of the batch (anti-fragility).
+ */
+
+import type { NextRequest } from "next/server";
+import { withApiErrorHandler } from "@/app/api/error-handler";
+import { successResponse } from "@/lib/api/response";
+import { UnauthorizedApiError } from "@/lib/api/errors";
+import { logger } from "@/lib/logger";
 import pool from "@/lib/db/client";
 import { generateAndSaveWeeklyReport } from "@/lib/reports/generator";
 
-// КРИТИЧНО: Забороняємо кешування результатів крону на серверах Vercel
+// Prevent Vercel from caching cron responses.
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
-  // 1. Захист за допомогою секрету (Vercel передає цей хедер автоматично)
-  if (
-    req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+interface ChallengeRow {
+  challenge_id: string;
+  skill_category: string;
+  title: string;
+  user_id: string;
+  handle: string;
+}
+
+export const GET = withApiErrorHandler(async (req: NextRequest, _ctx, requestId) => {
+  // ── Cron secret guard ──────────────────────────────────────────────────────
+  if (req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
+    throw new UnauthorizedApiError("Invalid or missing cron secret.");
   }
 
-  // 2. Розраховуємо дату минулого понеділка (week_start) [E5]
-  // Якщо сьогодні неділя, 14 червня, то weekStart буде понеділком, 1 червня.
-  // Це забезпечує аналіз повністю закритих звітів за позаминулий тиждень (Monday-Sunday).
+  // ── Compute week_start (last Monday at midnight UTC) ───────────────────────
   const now = new Date();
   const weekStart = new Date(now);
   weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7) - 7);
   weekStart.setHours(0, 0, 0, 0);
 
-  try {
-    // 3. Витягуємо всі активні публічні челенджі з Aurora PostgreSQL [E5]
-    const { rows } = await pool.query(`
-      SELECT
-        c.id AS challenge_id,
-        c.skill_category,
-        c.title,
-        u.id AS user_id,
-        u.handle
-      FROM challenges c
-      JOIN users u ON u.id = c.user_id
-      WHERE c.is_public = TRUE
-        AND c.streak_broken_at IS NULL
-    `);
+  // ── Fetch all active public challenges ────────────────────────────────────
+  const { rows } = await pool.query<ChallengeRow>(`
+    SELECT
+      c.id          AS challenge_id,
+      c.skill_category,
+      c.title,
+      u.id          AS user_id,
+      u.handle
+    FROM challenges c
+    JOIN users u ON u.id = c.user_id
+    WHERE c.is_public = TRUE
+      AND c.streak_broken_at IS NULL
+  `);
 
-    let processed = 0;
+  let processed = 0;
+  let failed = 0;
 
-    // 4. Запускаємо генерацію звітів для кожного челенджу
-    for (const row of rows) {
-      try {
-        await generateAndSaveWeeklyReport(
-          row.user_id,
-          row.handle,
-          row.challenge_id,
-          row.skill_category,
-          row.title,
-          weekStart,
-        );
-        processed++;
-      } catch (err) {
-        // Антикрихкість: один збій (наприклад, у лімітах конкретного користувача)
-        // не повинен блокувати генерацію звітів для решти бази [E5]
-        console.error(
-          `Failed to generate weekly report for ${row.handle}:`,
-          err,
-        );
-      }
+  // ── Generate per-challenge report (isolated failures) ─────────────────────
+  for (const row of rows) {
+    try {
+      await generateAndSaveWeeklyReport(
+        row.user_id,
+        row.handle,
+        row.challenge_id,
+        row.skill_category,
+        row.title,
+        weekStart,
+      );
+      processed++;
+    } catch (err) {
+      // Anti-fragility: a single user's AI quota error must not abort the batch.
+      failed++;
+      logger.warn("Weekly report failed for user", {
+        requestId,
+        handle: row.handle,
+        challengeId: row.challenge_id,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
-
-    return NextResponse.json({
-      processed,
-      weekStart: weekStart.toISOString().split("T")[0],
-    });
-  } catch (error: any) {
-    console.error("Weekly Coach Cron job failed:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
   }
-}
+
+  return successResponse(
+    {
+      weekStart: weekStart.toISOString().split("T")[0],
+      processed,
+      failed,
+    },
+    undefined,
+    200,
+    requestId,
+  );
+});

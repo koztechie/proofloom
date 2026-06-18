@@ -1,48 +1,59 @@
-import { NextRequest, NextResponse } from "next/server";
+/**
+ * app/api/cron/check-streaks/route.ts
+ *
+ * Cron job: scans all users and marks challenge streaks as broken for any
+ * user who has not submitted a proof today.
+ *
+ * Protected by CRON_SECRET (Vercel sets this header automatically).
+ * Wrapped with withApiErrorHandler for consistent error envelopes and logging.
+ */
+
+import type { NextRequest } from "next/server";
+import { withApiErrorHandler } from "@/app/api/error-handler";
+import { successResponse } from "@/lib/api/response";
+import { UnauthorizedApiError } from "@/lib/api/errors";
 import pool from "@/lib/db/client";
 import { getCurrentStreak } from "@/lib/dynamo/streaks";
 
-// КРИТИЧНО: Забороняємо кешування цього роуту
+// Prevent Vercel from caching cron responses.
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
-  // 1. Захист від неавторизованих викликів (Vercel передає цей хедер автоматично)
+export const GET = withApiErrorHandler(async (req: NextRequest, _ctx, requestId) => {
+  // ── Cron secret guard ──────────────────────────────────────────────────────
   const authHeader = req.headers.get("Authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    throw new UnauthorizedApiError("Invalid or missing cron secret.");
   }
 
-  try {
-    // 2. Отримуємо всіх користувачів з бази
-    const { rows: users } = await pool.query("SELECT id, handle FROM users;");
-    let brokenCount = 0;
+  // ── Fetch all users ────────────────────────────────────────────────────────
+  const { rows: users } = await pool.query<{ id: string; handle: string }>(
+    "SELECT id, handle FROM users;",
+  );
 
-    // 3. Перевіряємо стрік для кожного користувача
-    for (const user of users) {
-      // getCurrentStreak динамічно рахує стрік з DynamoDB. Якщо 0 — стрік перервано.
-      const currentStreak = await getCurrentStreak(user.handle);
+  let brokenCount = 0;
 
-      if (currentStreak === 0) {
-        // Позначаємо всі їхні активні челенджі як "спалені"
-        const updateQuery = `
-          UPDATE challenges 
-          SET streak_broken_at = NOW() 
-          WHERE user_id = $1 AND streak_broken_at IS NULL
-        `;
-        const res = await pool.query(updateQuery, [user.id]);
-        brokenCount += res.rowCount || 0;
-      }
+  // ── Check streak per user and mark broken challenges ──────────────────────
+  for (const user of users) {
+    const currentStreak = await getCurrentStreak(user.handle);
+
+    if (currentStreak === 0) {
+      const result = await pool.query(
+        `UPDATE challenges
+         SET streak_broken_at = NOW()
+         WHERE user_id = $1 AND streak_broken_at IS NULL`,
+        [user.id],
+      );
+      brokenCount += result.rowCount ?? 0;
     }
-
-    return NextResponse.json({
-      success: true,
-      message: `Cron executed successfully. Marked ${brokenCount} challenges as broken.`,
-    });
-  } catch (error: any) {
-    console.error("Cron job error:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
   }
-}
+
+  return successResponse(
+    {
+      message: `Cron executed successfully. Marked ${brokenCount} challenges as broken.`,
+      brokenCount,
+    },
+    undefined,
+    200,
+    requestId,
+  );
+});
