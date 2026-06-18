@@ -1,5 +1,4 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { requireAuth } from "@/lib/auth/guards";
 import { getChallengesByUserId } from "@/lib/db/challenges";
 import { getCurrentStreak, getTotalProofScore } from "@/lib/dynamo/streaks";
 import { getProofsByHandle } from "@/lib/dynamo/proofs";
@@ -9,15 +8,12 @@ import Logo from "@/components/logo";
 import Header from "@/components/Header";
 
 export default async function DashboardPage() {
-  const session = await auth();
+  // requireAuth() redirects to /auth/login if no valid session is found,
+  // and also rejects disabled accounts (isActive = false).
+  const user = await requireAuth();
 
-  // Додатковий захист: якщо сесії немає — редірект на логін
-  if (!session?.user?.id || !session?.user?.handle) {
-    redirect("/auth/login");
-  }
-
-  const handle = session.user.handle;
-  const userId = session.user.id;
+  const handle = user.handle;
+  const userId = user.id;
 
   // ОПТИМІЗАЦІЯ: завантажуємо дані з Aurora PG та DynamoDB ПАРАЛЕЛЬНО
   const [challenges, currentStreak, totalScore, proofs] = await Promise.all([

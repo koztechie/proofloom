@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ProofRecord } from "@/lib/dynamo/proofs";
+import { Proof } from "@/types";
 
 interface SubmissionFormProps {
   challengeId: string;
-  initialProof: ProofRecord | null;
+  initialProof: Proof | null;
   nextStreak: number;
 }
 
@@ -21,7 +21,7 @@ export default function SubmissionForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [activeProof, setActiveProof] = useState<ProofRecord | null>(
+  const [activeProof, setActiveProof] = useState<Proof | null>(
     initialProof,
   );
   const [showAnimation, setShowAnimation] = useState(false);

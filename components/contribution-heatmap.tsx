@@ -51,7 +51,7 @@ export function ContributionHeatmap({
           {Array.from({ length: weeks }, (_, w) => (
             <div key={w} className="flex flex-1 flex-col gap-[3px]">
               {Array.from({ length: 7 }, (_, d) => {
-                const level = days[w * 7 + d]
+                const level = days[w * 7 + d] ?? 0;
                 return (
                   <div
                     key={d}

@@ -24,6 +24,7 @@ export async function create(params: NewProof): Promise<ProofRow> {
   return db.transaction(async (tx) => {
     // 1. Insert the proof record
     const [proof] = await tx.insert(proofs).values(params).returning();
+    if (!proof) throw new Error("Failed to create proof");
 
     // 2. Upsert leaderboard_entries: add score, increment streak counter
     await tx

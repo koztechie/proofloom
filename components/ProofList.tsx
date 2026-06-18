@@ -1,6 +1,6 @@
-import { ProofRecord } from "@/lib/dynamo/proofs";
+import { Proof } from "@/types";
 
-interface EnrichedProof extends ProofRecord {
+interface EnrichedProof extends Proof {
   skill_category: string;
 }
 
@@ -28,7 +28,7 @@ export default function ProofList({ proofs }: ProofListProps) {
   return (
     <div className="space-y-4">
       {proofs.map((p) => {
-        const dateStr = p.sk.split("#")[1];
+        const dateStr = p.sk.split("#")[1] || "";
         const formattedDate = new Date(dateStr).toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",

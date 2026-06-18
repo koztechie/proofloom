@@ -1,13 +1,11 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { requireAuth } from "@/lib/auth/guards";
 import Header from "@/components/Header";
 import SettingsForm from "./form";
 
 export default async function SettingsPage() {
-  const session = await auth();
-  if (!session?.user) {
-    redirect("/auth/login");
-  }
+  // requireAuth() redirects to /auth/login if no valid session is found,
+  // and also rejects disabled accounts (isActive = false).
+  await requireAuth();
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 pb-12">

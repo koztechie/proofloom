@@ -38,6 +38,10 @@ export const users = pgTable("users", {
   githubUrl: text("github_url"),
   linkedinUrl: text("linkedin_url"),
   avatarType: text("avatar_type").default("initials").notNull(),
+  /** RBAC role — maps to the Role enum in lib/auth/roles.ts */
+  role: text("role").default("USER").notNull(),
+  /** Soft-ban flag: false = account is suspended and cannot log in */
+  isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).default(
     sql`NOW()`,
   ),

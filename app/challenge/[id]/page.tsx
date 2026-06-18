@@ -1,5 +1,5 @@
-import { auth } from "@/lib/auth";
-import { redirect, notFound } from "next/navigation";
+import { requireAuth } from "@/lib/auth/guards";
+import { notFound } from "next/navigation";
 import { getChallengeById } from "@/lib/db/challenges";
 import { getProofsByHandle } from "@/lib/dynamo/proofs";
 import { getCurrentStreak } from "@/lib/dynamo/streaks";
@@ -12,21 +12,20 @@ interface PageProps {
 }
 
 export default async function ChallengePage({ params }: PageProps) {
-  const session = await auth();
-  if (!session?.user?.id || !session?.user?.handle) {
-    redirect("/auth/login");
-  }
+  // requireAuth() redirects to /auth/login if no valid session is found,
+  // and also rejects disabled accounts (isActive = false).
+  const user = await requireAuth();
 
-  // КРИТИЧНО ДЛЯ NEXT.JS 16: params є промісом, його обов'язково авейтити
+  // CRITICAL FOR NEXT.JS 16: params is a Promise and must be awaited
   const { id } = await params;
 
-  // 1. Отримуємо дані про челендж з Aurora PostgreSQL
+  // 1. Fetch challenge data from Aurora PostgreSQL
   const challenge = await getChallengeById(id);
-  if (!challenge || challenge.user_id !== session.user.id) {
+  if (!challenge || challenge.user_id !== user.id) {
     notFound();
   }
 
-  const handle = session.user.handle;
+  const handle = user.handle;
 
   // 2. Паралельно отримуємо історію звітів та поточний стрік з DynamoDB
   const [proofs, currentStreak] = await Promise.all([

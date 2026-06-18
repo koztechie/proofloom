@@ -29,7 +29,7 @@ export default function HeatmapCalendar({ proofs }: HeatmapCalendarProps) {
     for (let i = 363; i >= 0; i--) {
       const d = new Date();
       d.setDate(today.getDate() - i);
-      const dateStr = d.toISOString().split("T")[0];
+      const dateStr = d.toISOString().substring(0, 10);
       result.push(dateStr);
     }
     return result;

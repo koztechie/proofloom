@@ -8,21 +8,7 @@
  */
 
 import * as challengeRepo from "./repositories/challenge.repository";
-
-// Re-export the canonical row type under the legacy name.
-// Field nullability matches the original interface so no call-site changes
-// are required in dashboard/profile pages.
-export type Challenge = {
-  id: string;
-  user_id: string;
-  title: string;
-  skill_category: string;
-  target_days: number;       // non-null: fallback to 30
-  start_date: string | null;
-  is_public: boolean;        // non-null: fallback to true
-  streak_broken_at: Date | null;
-  created_at: Date;          // non-null: fallback to epoch
-};
+import { Challenge } from "@/types";
 
 /** Maps a Drizzle camelCase row to the snake_case legacy shape. */
 function toChallenge(row: challengeRepo.ChallengeRow): Challenge {

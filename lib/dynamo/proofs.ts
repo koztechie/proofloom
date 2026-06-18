@@ -1,17 +1,7 @@
 import { PutCommand, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { docClient } from "./client";
 
-export interface ProofRecord {
-  pk: string;
-  sk: string;
-  challenge_id: string;
-  proof_text: string;
-  proof_url: string | null;
-  streak_day: number;
-  ai_score: number;
-  ai_comment: string;
-  submitted_at: string;
-}
+import { Proof as ProofRecord } from "@/types";
 
 export async function submitProof(params: {
   handle: string;

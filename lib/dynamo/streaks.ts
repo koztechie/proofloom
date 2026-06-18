@@ -2,7 +2,7 @@ import { getProofsByHandle } from "./proofs";
 
 // Допоміжна функція для безпечного отримання дати в форматі YYYY-MM-DD
 function getLocalDateString(date: Date): string {
-  return date.toISOString().split("T")[0];
+  return date.toISOString().substring(0, 10);
 }
 
 export async function getCurrentStreak(handle: string): Promise<number> {

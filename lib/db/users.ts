@@ -9,25 +9,7 @@
 
 import bcrypt from "bcryptjs";
 import * as userRepo from "./repositories/user.repository";
-
-// Re-export the canonical row type under the legacy name so existing
-// consumers that rely on this interface keep compiling unchanged.
-export type User = {
-  id: string;
-  handle: string;
-  email: string;
-  password_hash: string;
-  display_name: string | null;
-  bio: string | null;
-  avatar_url: string | null;
-  location: string | null;
-  website_url: string | null;
-  twitter_url: string | null;
-  github_url: string | null;
-  linkedin_url: string | null;
-  avatar_type: string;
-  created_at: Date;          // non-null: fallback to epoch
-};
+import { User } from "@/types";
 
 /** Maps a Drizzle camelCase row to the snake_case legacy shape. */
 function toUser(row: userRepo.UserRow): User {
@@ -45,6 +27,8 @@ function toUser(row: userRepo.UserRow): User {
     github_url: row.githubUrl ?? null,
     linkedin_url: row.linkedinUrl ?? null,
     avatar_type: row.avatarType,
+    role: row.role,
+    is_active: row.isActive,
     created_at: row.createdAt ?? new Date(0),
   };
 }

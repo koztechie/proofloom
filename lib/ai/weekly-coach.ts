@@ -3,7 +3,10 @@ import {
   InvokeModelCommand,
 } from "@aws-sdk/client-bedrock-runtime";
 
-const clientConfig: any = {
+import { BedrockRuntimeClientConfig } from "@aws-sdk/client-bedrock-runtime";
+import { CoachReport } from "@/types";
+
+const clientConfig: BedrockRuntimeClientConfig = {
   region: process.env.AWS_REGION || "us-east-1",
 };
 
@@ -18,20 +21,13 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
 
 const client = new BedrockRuntimeClient(clientConfig);
 
-export interface WeeklyReport {
-  summary: string;
-  strengths: string;
-  gaps: string;
-  recommendation: string;
-}
-
 export async function generateWeeklyReport(params: {
   skillCategory: string;
   challengeTitle: string;
   proofs: Array<{ date: string; proofText: string; aiScore: number }>;
   avgScore: number;
   consistency: number;
-}): Promise<WeeklyReport> {
+}): Promise<CoachReport> {
   // Обрізаємо кожний звіт до 200 символів, щоб захистити контекст від переповнення
   const proofDigest = params.proofs
     .map((p) => `[${p.date}, score ${p.aiScore}]: ${p.proofText.slice(0, 200)}`)

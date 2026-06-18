@@ -22,6 +22,7 @@ async function getDb() {
 export async function create(params: NewChallenge): Promise<ChallengeRow> {
   const db = await getDb();
   const [row] = await db.insert(challenges).values(params).returning();
+  if (!row) throw new Error("Failed to create challenge");
   return row;
 }
 
@@ -85,6 +86,7 @@ export async function updateStreak(
     .set({ streakBrokenAt: brokenAt })
     .where(eq(challenges.id, id))
     .returning();
+  if (!row) throw new Error("Failed to update streak");
   return row;
 }
 

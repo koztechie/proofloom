@@ -73,6 +73,7 @@ export async function getById(id: string): Promise<UserRow | null> {
 export async function create(params: NewUser): Promise<UserRow> {
   const db = await getDb();
   const [row] = await db.insert(users).values(params).returning();
+  if (!row) throw new Error("Failed to create user");
   return row;
 }
 
@@ -98,5 +99,6 @@ export async function updateProfile(
     })
     .where(eq(users.id, id))
     .returning();
+  if (!row) throw new Error("Failed to update profile");
   return row;
 }

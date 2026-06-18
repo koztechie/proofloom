@@ -8,6 +8,13 @@
       "when": 1781720129827,
       "tag": "0000_wild_nightcrawler",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1781760315510,
+      "tag": "0001_petite_tarantula",
+      "breakpoints": true
     }
   ]
 }

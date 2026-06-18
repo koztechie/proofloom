@@ -103,7 +103,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
   // 4. Створюємо чисті дані для календаря Heatmap
   const heatmapData = enrichedProofs.map((p) => ({
-    date: p.sk.split("#")[1],
+    date: p.sk.split("#")[1] || "",
     score: p.ai_score,
   }));
 

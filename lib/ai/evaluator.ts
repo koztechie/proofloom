@@ -3,7 +3,10 @@ import {
   InvokeModelCommand,
 } from "@aws-sdk/client-bedrock-runtime";
 
-const clientConfig: any = {
+import { BedrockRuntimeClientConfig } from "@aws-sdk/client-bedrock-runtime";
+import { ProofEvaluation } from "@/types";
+
+const clientConfig: BedrockRuntimeClientConfig = {
   region: process.env.AWS_REGION || "us-east-1",
 };
 
@@ -22,7 +25,7 @@ export async function evaluateProof(
   skillCategory: string,
   proofText: string,
   proofUrl?: string,
-): Promise<{ score: number; comment: string }> {
+): Promise<ProofEvaluation> {
   const prompt = `You are evaluating a daily skill practice proof submission.
 
 Skill category: ${skillCategory}

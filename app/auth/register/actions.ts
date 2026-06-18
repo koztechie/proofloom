@@ -4,7 +4,7 @@ import { createUser, getUserByEmail, getUserByHandle } from "@/lib/db/users";
 import { signIn } from "@/lib/auth";
 import { isReservedHandle } from "@/lib/reservedWords";
 
-export async function registerUser(prevState: any, formData: FormData) {
+export async function registerUser(prevState: unknown, formData: FormData) {
   const email = formData.get("email") as string;
   const handle = formData.get("handle") as string;
   const password = formData.get("password") as string;
@@ -58,4 +58,6 @@ export async function registerUser(prevState: any, formData: FormData) {
     redirect: true,
     redirectTo: "/dashboard",
   });
+
+  return { error: undefined };
 }
