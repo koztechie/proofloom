@@ -1,5 +1,12 @@
+/**
+ * lib/dynamo/weekly-reader.ts
+ *
+ * Operations to read weekly proofs for AI coach report generation.
+ */
+
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
-import { docClient } from "./client";
+import { sendWithRetry } from "./client";
+import { TABLE_NAME, Keys } from "./schema";
 
 export interface ProofEntry {
   date: string;
@@ -9,7 +16,7 @@ export interface ProofEntry {
   streakDay: number;
 }
 
-// Антикрихкість: форматуємо дату без зсувів часового поясу ISO
+// Format date without time zone shifts
 function formatDate(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -26,24 +33,24 @@ export async function getWeeklyProofs(
   endDate.setDate(endDate.getDate() + 6);
   const endStr = formatDate(endDate);
 
-  const result = await docClient.send(
+  const result = await sendWithRetry(
     new QueryCommand({
-      TableName: "StreakProofs",
-      // Використовуємо лексикографічний BETWEEN на сорт-ключі для миттєвого пошуку
+      TableName: TABLE_NAME,
       KeyConditionExpression: "pk = :pk AND sk BETWEEN :start AND :end",
       ExpressionAttributeValues: {
-        ":pk": `USER#${handle}`,
-        ":start": `PROOF#${startStr}`,
-        ":end": `PROOF#${endStr}`,
+        ":pk": Keys.proofPk(handle),
+        ":start": Keys.proofSk(startStr),
+        ":end": Keys.proofSk(endStr),
       },
     }),
   );
 
-  return (result.Items || []).map((item) => ({
-    date: item.sk.replace("PROOF#", ""),
-    proofText: item.proof_text,
-    aiScore: item.ai_score ?? 50,
-    aiComment: item.ai_comment ?? "",
-    streakDay: item.streak_day ?? 0,
+  return (result.Items || []).map((item: Record<string, any>) => ({
+    date: String(item.sk).replace("PROOF#", ""),
+    // Provide both new format fields and fallback to snake_case just in case old records exist
+    proofText: String(item.proofText ?? item.proof_text ?? ""),
+    aiScore: Number(item.aiScore ?? item.ai_score ?? 50),
+    aiComment: String(item.aiComment ?? item.ai_comment ?? ""),
+    streakDay: Number(item.streakDay ?? item.streak_day ?? 0),
   }));
 }
