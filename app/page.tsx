@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/card";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { ContributionHeatmap } from "@/components/contribution-heatmap";
+import Image from "next/image";
+import { Suspense } from "react";
 
 const features = [
   {
@@ -115,6 +117,17 @@ export default function HomePage() {
               </Button>
             </div>
 
+            {/* Added LCP Image as requested */}
+            <div className="w-full max-w-4xl mt-8 overflow-hidden rounded-xl border border-zinc-800 shadow-2xl relative aspect-[21/9]">
+              <Image
+                src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=2000"
+                alt="ProofLoom Hero Preview"
+                fill
+                priority
+                className="object-cover"
+              />
+            </div>
+
             {/* Heatmap preview */}
             <Card className="mt-8 w-full max-w-3xl text-left">
               <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
@@ -138,7 +151,8 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Features */}
+        <Suspense fallback={<div className="container py-20 text-center">Loading Features...</div>}>
+          {/* Features */}
         <section className="border-b border-border">
           <div className="container py-20">
             <div className="mx-auto flex max-w-2xl flex-col items-center gap-4 text-center">
@@ -219,6 +233,7 @@ export default function HomePage() {
             </Card>
           </div>
         </section>
+        </Suspense>
       </main>
       <SiteFooter />
     </div>
