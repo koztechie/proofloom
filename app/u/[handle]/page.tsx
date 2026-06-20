@@ -1,78 +1,63 @@
-import crypto from "crypto";
 import { notFound } from "next/navigation";
 import { getUserByHandle } from "@/lib/db/users";
 import { getChallengesByUserId } from "@/lib/db/challenges";
 import { getProofsByHandle } from "@/lib/dynamo/proofs";
 import { getCurrentStreak, getTotalProofScore } from "@/lib/dynamo/streaks";
-import ContributionHeatmap from "@/components/features/profile/ContributionHeatmap";
-import ProofList from "@/components/features/proof/ProofList";
+import db from "@/lib/db/client"; // Наш синглтон Pool клієнта pg
 import Link from "next/link";
-import { Metadata } from "next";
-import pool from "@/lib/db/client";
+
+// Нові імпорти згідно з Feature-Based архітектурою
+import ContributionHeatmap from "@/components/features/profile/ContributionHeatmap";
 import WeeklyCoachReport from "@/components/features/report/WeeklyCoachReport";
+import ProofList from "@/components/features/proof/ProofList";
 import Header from "@/components/Header";
+
+// Суворі типи з нашого Type-Hardening шару
+import { User, Challenge, Proof } from "@/types";
+import crypto from "crypto";
 
 interface PageProps {
   params: Promise<{ handle: string }>;
 }
 
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
-  // КРИТИЧНО ДЛЯ NEXT.JS 16: асинхронно отримуємо параметри
-  const { handle } = await params;
-
-  const user = await getUserByHandle(handle);
-
-  if (!user) {
-    return {
-      title: "User Not Found | ProofLoom",
-      description: "The requested profile does not exist.",
-    };
-  }
-
-  const streak = await getCurrentStreak(handle);
-  const displayName = user.display_name || handle;
-  const title = `${displayName} (@${handle}) | ProofLoom`;
-  const description = `${streak}-day skill building streak. AI-verified daily progress.`;
-
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      url: `https://proofloom.vercel.app/u/${handle}`,
-      siteName: "ProofLoom",
-      type: "profile",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-    },
-  };
+interface EnrichedProof extends Proof {
+  skill_category: string;
 }
 
 export default async function PublicProfilePage({ params }: PageProps) {
-  // КРИТИЧНО ДЛЯ NEXT.JS 16: асинхронно отримуємо параметри динамічного роуту
+  // NEXT.JS 16: авейтимо параметри роуту
   const { handle } = await params;
 
-  // 1. Шукаємо користувача в Aurora PostgreSQL за його унікальним handle
-  const user = await getUserByHandle(handle);
+  // 1. Шукаємо користувача в Aurora PostgreSQL
+  const user: User | null = await getUserByHandle(handle);
   if (!user) {
-    notFound(); // Якщо користувача немає в базі — 404
+    notFound();
   }
 
-  // 2. ОПТИМІЗАЦІЯ: завантажуємо дані з Aurora PG та DynamoDB паралельно
-  const [challenges, proofs, currentStreak, totalScore] = await Promise.all([
-    getChallengesByUserId(user.id, { publicOnly: true }),
-    getProofsByHandle(handle),
-    getCurrentStreak(handle),
-    getTotalProofScore(handle),
-  ]);
+  // 2. Паралельно завантажуємо дані з Postgres та DynamoDB (паралельна оптимізація)
+  const [challenges, proofs, currentStreak, totalScore, weeklyReportResult] =
+    await Promise.all([
+      getChallengesByUserId(user.id, { publicOnly: true }) as Promise<
+        Challenge[]
+      >,
+      getProofsByHandle(handle) as Promise<Proof[]>,
+      getCurrentStreak(handle),
+      getTotalProofScore(handle),
+      // Виконуємо сирий SQL-запит на пулі з'єднань
+      db.query(
+        `
+        SELECT * FROM weekly_reports
+        WHERE user_id = $1
+        ORDER BY week_start DESC
+        LIMIT 1
+      `,
+        [user.id],
+      ),
+    ]);
 
-  // Генеруємо хеш пошти для завантаження Gravatar аватара
+  const weeklyReportRows = weeklyReportResult.rows;
+
+  // 3. Генерація Gravatar
   const emailHash = crypto
     .createHash("md5")
     .update(user.email.toLowerCase().trim())
@@ -80,62 +65,39 @@ export default async function PublicProfilePage({ params }: PageProps) {
   const gravatarUrl = `https://www.gravatar.com/avatar/${emailHash}?d=identicon&s=150`;
   const useGravatar = user.avatar_type === "gravatar";
 
-  // 3. Зчитуємо останній тижневий звіт користувача з Aurora PostgreSQL [E6]
-  const { rows: reportRows } = await pool.query(
-    `
-    SELECT * FROM weekly_reports
-    WHERE user_id = $1
-    ORDER BY week_start DESC
-    LIMIT 1
-  `,
-    [user.id],
-  );
-  const weeklyReport = reportRows[0] || null;
-
-  // 3. Збагачуємо NoSQL-звіти реляційними категоріями з Postgres
-  const enrichedProofs = proofs.map((p) => {
-    const ch = challenges.find((c) => c.id === p.challenge_id);
+  // 4. Суворе збагачення типів (In-Memory Join) з реляційними категоріями
+  const enrichedProofs: EnrichedProof[] = proofs.map((p: Proof) => {
+    const ch = challenges.find((c: Challenge) => c.id === p.challenge_id);
     return {
       ...p,
       skill_category: ch ? ch.skill_category : "Other",
     };
   });
 
-  // 4. Створюємо чисті дані для календаря Heatmap
-  const heatmapData = enrichedProofs.map((p) => ({
-    date: p.sk.split("#")[1] || "",
-    score: p.ai_score,
-  }));
+  // Створюємо чисті дані для календаря Heatmap з примусовою типізацією p
+  const heatmapData = (enrichedProofs as EnrichedProof[]).map(
+    (p: EnrichedProof) => ({
+      date: p.sk.split("#")[1] || "",
+      score: p.ai_score,
+    }),
+  );
 
-  // 5. Обрізаємо до 10 останніх звітів для виведення в стрічку
   const recentProofs = enrichedProofs.slice(0, 10);
+
+  // 5. Дефенсивний мапінг сирих SQL-колонок snake_case у формат пропсів UI-компонента
+  const weeklyReport = weeklyReportRows[0]
+    ? {
+        week_start: weeklyReportRows[0].week_start,
+        week_end: weeklyReportRows[0].week_end,
+        ai_summary: weeklyReportRows[0].ai_summary,
+        ai_strengths: weeklyReportRows[0].ai_strengths,
+        ai_gaps: weeklyReportRows[0].ai_gaps,
+        ai_recommendation: weeklyReportRows[0].ai_recommendation,
+      }
+    : null;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 pb-12">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "ProfilePage",
-            dateCreated: user.created_at,
-            mainEntity: {
-              "@type": "Person",
-              name: user.display_name || handle,
-              alternateName: handle,
-              description: user.bio || undefined,
-              image: useGravatar ? gravatarUrl : undefined,
-              sameAs: [
-                user.website_url,
-                user.github_url,
-                user.twitter_url,
-                user.linkedin_url
-              ].filter(Boolean)
-            }
-          })
-        }}
-      />
-      {/* Шапка */}
       <Header />
 
       <main className="max-w-4xl mx-auto px-6 mt-12 space-y-8">
@@ -153,6 +115,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
                 {handle.substring(0, 2)}
               </div>
             )}
+
             <div className="text-center md:text-left space-y-2">
               <h1 className="text-3xl font-extrabold tracking-tight text-zinc-100">
                 {user.display_name || handle}
@@ -186,7 +149,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
                 </span>
               </div>
 
-              {/* Соціалки з SEO-захистом від спаму */}
+              {/* Соціалки */}
               <div className="flex justify-center md:justify-start gap-3 pt-2">
                 {user.github_url && (
                   <a
@@ -243,25 +206,16 @@ export default async function PublicProfilePage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Реальний інтерактивний календар Heatmap */}
+        {/* Календар Heatmap */}
         <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl">
           <h2 className="text-lg font-bold mb-4">Activity Heatmap</h2>
           <ContributionHeatmap proofs={heatmapData} />
         </div>
 
-        {/* Реальний інтерактивний календар Heatmap */}
-        <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl">
-          <h2 className="text-lg font-bold mb-4">Activity Heatmap</h2>
-          <ContributionHeatmap proofs={heatmapData} />
-        </div>
-
-        {/* Блок тижневої аналітики від ШІ-коуча [E6] */}
+        {/* Блок тижневої аналітики */}
         <WeeklyCoachReport report={weeklyReport} />
 
-        {/* Публічні челенджі профілю */}
-        <div className="space-y-4"></div>
-
-        {/* Публічні челенджі профілю */}
+        {/* Публічні челенджі */}
         <div className="space-y-4">
           <h2 className="text-xl font-bold">Active Challenges</h2>
           {challenges.length === 0 ? (
@@ -270,9 +224,9 @@ export default async function PublicProfilePage({ params }: PageProps) {
             </p>
           ) : (
             <div className="grid md:grid-cols-2 gap-4">
-              {challenges.map((challenge) => {
+              {challenges.map((challenge: Challenge) => {
                 const challengeProofs = proofs.filter(
-                  (p) => p.challenge_id === challenge.id,
+                  (p: Proof) => p.challenge_id === challenge.id,
                 );
                 const progressPercentage = Math.min(
                   100,
