@@ -15,7 +15,8 @@ import {
 import Header from "@/components/Header";
 
 export const metadata: Metadata = {
-  title: "Pricing — ProofLoom",
+  title: "Pricing",
+  description: "Simple pricing for committed builders on ProofLoom. Start free and upgrade when you're ready.",
 };
 
 const tiers = [

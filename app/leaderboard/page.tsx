@@ -2,6 +2,12 @@ import Link from "next/link";
 import { getLeaderboard } from "@/lib/dynamo/leaderboard";
 import { getCurrentStreak } from "@/lib/dynamo/streaks";
 import Header from "@/components/Header";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Leaderboard",
+  description: "Global leaderboard ranking the most consistent builders on ProofLoom.",
+};
 
 // КРИТИЧНО ДЛЯ ХАКАТОНУ: Incremental Static Regeneration (ISR).
 // Сторінка кешується на серверах Vercel і оновлюється на фоні раз на 60 секунд.

@@ -84,6 +84,37 @@ const steps = [
 export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "ProofLoom",
+            url: "https://proofloom.vercel.app",
+            potentialAction: {
+              "@type": "SearchAction",
+              target: "https://proofloom.vercel.app/leaderboard?category={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          })
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "ProofLoom",
+            url: "https://proofloom.vercel.app",
+            logo: "https://proofloom.vercel.app/logo.svg",
+            sameAs: [
+              "https://twitter.com/proofloom"
+            ]
+          })
+        }}
+      />
       <Header />
       <main className="flex-1">
         {/* Hero */}

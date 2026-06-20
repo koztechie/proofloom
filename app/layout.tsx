@@ -32,9 +32,23 @@ const GeistMono = localFont({
 })
 
 export const metadata: Metadata = {
-  title: "ProofLoom — AI-Verified Skill Tracking",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://proofloom.vercel.app"),
+  title: {
+    default: "ProofLoom — AI-Verified Skill Tracker",
+    template: "%s | ProofLoom",
+  },
   description:
     "Build skills in public. Submit daily proof, get AI verification, and climb the leaderboard. ProofLoom turns consistency into a verifiable track record.",
+  keywords: ["developer habits", "skill tracking", "AWS databases", "Vercel", "Bedrock"],
+  openGraph: {
+    siteName: "ProofLoom",
+    locale: "en_US",
+    type: "website",
+    images: [{ url: "/logo.svg", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
   generator: "v0.app",
 }
 

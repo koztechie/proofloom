@@ -6,9 +6,41 @@ import { getCurrentStreak } from "@/lib/dynamo/streaks";
 import ChallengeForm from "@/components/features/challenge/ChallengeForm";
 import Link from "next/link";
 import Header from "@/components/Header";
+import { Metadata } from "next";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const challenge = await getChallengeById(id);
+
+  if (!challenge) {
+    return {
+      title: "Challenge Not Found",
+      description: "The requested challenge does not exist.",
+    };
+  }
+
+  const title = challenge.title;
+  const description = `Join the ${challenge.skill_category} challenge: ${challenge.title}. Track your progress and build a verifiable track record on ProofLoom.`;
+
+  return {
+    title,
+    description,
+    keywords: [challenge.skill_category, "challenge", "skill tracking"],
+    openGraph: {
+      title,
+      description,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
 }
 
 export default async function ChallengePage({ params }: PageProps) {

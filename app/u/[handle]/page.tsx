@@ -112,6 +112,29 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 pb-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ProfilePage",
+            dateCreated: user.created_at,
+            mainEntity: {
+              "@type": "Person",
+              name: user.display_name || handle,
+              alternateName: handle,
+              description: user.bio || undefined,
+              image: useGravatar ? gravatarUrl : undefined,
+              sameAs: [
+                user.website_url,
+                user.github_url,
+                user.twitter_url,
+                user.linkedin_url
+              ].filter(Boolean)
+            }
+          })
+        }}
+      />
       {/* Шапка */}
       <Header />
 
