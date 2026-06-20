@@ -20,7 +20,7 @@ const isDev = process.env.NODE_ENV === "development";
 // Async context to automatically bind requestId and userId
 export const loggerContext = new AsyncLocalStorage<LogMeta>();
 
-export const logger = pino({
+const pinoLogger = pino({
   level: process.env.LOG_LEVEL || "info",
   formatters: {
     level: (label) => ({ level: label }),
@@ -46,3 +46,21 @@ export const logger = pino({
     return ctx || {};
   },
 });
+
+export const logger = {
+  info(message: string, meta?: LogMeta): void {
+    pinoLogger.info(meta || {}, message);
+  },
+  warn(message: string, meta?: LogMeta): void {
+    pinoLogger.warn(meta || {}, message);
+  },
+  error(message: string, meta?: LogMeta): void {
+    pinoLogger.error(meta || {}, message);
+  },
+  debug(message: string, meta?: LogMeta): void {
+    pinoLogger.debug(meta || {}, message);
+  },
+  fatal(message: string, meta?: LogMeta): void {
+    pinoLogger.fatal(meta || {}, message);
+  }
+} as const;

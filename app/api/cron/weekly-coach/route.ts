@@ -14,11 +14,11 @@ export async function GET(req: NextRequest) {
   if (
     req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`
   ) {
-    logger.warn({ requestId }, "Unauthorized cron attempt");
+    logger.warn("Unauthorized cron attempt", { requestId });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  logger.info({ requestId }, "Starting weekly coach cron job");
+  logger.info("Starting weekly coach cron job", { requestId });
 
   // 2. Розраховуємо дату минулого понеділка (week_start)
   const now = new Date();
@@ -60,25 +60,25 @@ export async function GET(req: NextRequest) {
         failed++;
         // ПРАВИЛЬНИЙ СИГНАТУРНИЙ ВИКЛИК PINO: об'єкт завжди першим!
         logger.warn(
+          "Weekly report failed for user",
           {
             requestId,
             handle: row.handle,
             challengeId: row.challenge_id,
             error: err instanceof Error ? err.message : String(err),
-          },
-          "Weekly report failed for user",
+          }
         );
       }
     }
 
     logger.info(
+      "Weekly coach cron completed",
       {
         requestId,
         processed,
         failed,
         weekStart: weekStart.toISOString().split("T")[0],
-      },
-      "Weekly coach cron completed",
+      }
     );
     return NextResponse.json({
       processed,
@@ -86,11 +86,11 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     logger.error(
+      "Weekly coach cron failed critically",
       {
         requestId,
         error: error instanceof Error ? error.message : String(error),
-      },
-      "Weekly coach cron failed critically",
+      }
     );
     return NextResponse.json(
       { error: "Internal Server Error" },

@@ -4,31 +4,39 @@ import { errorResponse } from "@/lib/api/response";
 import { logger } from "@/lib/logger";
 import crypto from "crypto";
 
-type ApiHandler = (req: NextRequest, context: any) => Promise<NextResponse>;
+// Внутрішній тип хендлера, який приймає 3 аргументи для наскрізного логування
+type InnerApiHandler = (
+  req: NextRequest,
+  context: any,
+  requestId: string,
+) => Promise<NextResponse>;
 
-export function withApiErrorHandler(handler: ApiHandler): ApiHandler {
+// Зовнішній тип хендлера для Next.js (строго 2 аргументи, щоб задовольнити валідатор Next.js 16)
+type NextApiHandler = (req: NextRequest, context: any) => Promise<NextResponse>;
+
+export function withApiErrorHandler(handler: InnerApiHandler): NextApiHandler {
   return async (req: NextRequest, context: any) => {
     const requestId = crypto.randomUUID();
 
     try {
-      // Виконуємо запит далі по ланцюжку
-      const response = await handler(req, context);
+      // Виконуємо запит далі по ланцюжку, передаючи requestId у внутрішній хендлер
+      const response = await handler(req, context, requestId);
 
-      // Додаємо X-Request-Id у заголовки успішних відповідей [E7]
+      // Додаємо X-Request-Id у заголовки успішних відповідей
       response.headers.set("X-Request-Id", requestId);
       return response;
     } catch (err) {
       // ── Branch 1: Наші типізовані помилки системи (AppError) ──
       if (err instanceof AppError) {
-        // ПРАВИЛЬНИЙ ВИКЛИК PINO: об'єкт метаданих завжди першим!
+        // ПРАВИЛЬНИЙ ВИКЛИК PINO: об'єкт метаданих ЗАВЖДИ першим!
         logger.warn(
+          "AppError caught in API wrapper",
           {
             requestId,
             code: err.code,
             status: err.statusCode,
             message: err.message,
-          },
-          "AppError caught in API wrapper",
+          }
         );
 
         return errorResponse(
@@ -41,14 +49,14 @@ export function withApiErrorHandler(handler: ApiHandler): ApiHandler {
       }
 
       // ── Branch 2: Непередбачувані критичні помилки (Unhandled Errors) ──
-      // Логуємо деталі (включаючи stack trace), але не показуємо їх у проді з міркувань безпеки
+      // ПРАВИЛЬНИЙ ВИКЛИК PINO: об'єкт метаданих ЗАВЖДИ першим!
       logger.error(
+        "Unhandled critical error caught in API wrapper",
         {
           requestId,
           error: err instanceof Error ? err.message : String(err),
           stack: err instanceof Error ? err.stack : undefined,
-        },
-        "Unhandled critical error caught in API wrapper",
+        }
       );
 
       return errorResponse(
