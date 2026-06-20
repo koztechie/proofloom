@@ -7,11 +7,11 @@ interface Proof {
   score: number;
 }
 
-interface HeatmapCalendarProps {
+interface ContributionHeatmapProps {
   proofs: Proof[];
 }
 
-export default function HeatmapCalendar({ proofs }: HeatmapCalendarProps) {
+export default function ContributionHeatmap({ proofs }: ContributionHeatmapProps) {
   // Конвертуємо масив у карту для миттєвого пошуку O(1)
   const proofMap = useMemo(() => {
     const map = new Map<string, number>();

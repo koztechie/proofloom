@@ -3,8 +3,8 @@ import { getChallengesByUserId } from "@/lib/db/challenges";
 import { getCurrentStreak, getTotalProofScore } from "@/lib/dynamo/streaks";
 import { getProofsByHandle } from "@/lib/dynamo/proofs";
 import Link from "next/link";
-import GenerateReportButton from "@/components/GenerateReportButton";
-import Logo from "@/components/logo";
+import GenerateReportButton from "@/components/features/report/GenerateReportButton";
+import Logo from "@/components/shared/logo";
 import Header from "@/components/Header";
 
 export default async function DashboardPage() {

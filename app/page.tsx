@@ -19,7 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { SiteFooter } from "@/components/site-footer";
+import { SiteFooter } from "@/components/layout/site-footer";
 import { ContributionHeatmap } from "@/components/contribution-heatmap";
 
 const features = [

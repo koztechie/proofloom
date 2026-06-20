@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
-import Logo from "./logo";
-import UserMenu from "./UserMenu";
+import Logo from "@/components/shared/logo";
+import UserMenu from "@/components/features/auth/UserMenu";
 
 export default async function Header() {
   const session = await auth();

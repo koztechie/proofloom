@@ -4,12 +4,12 @@ import { getUserByHandle } from "@/lib/db/users";
 import { getChallengesByUserId } from "@/lib/db/challenges";
 import { getProofsByHandle } from "@/lib/dynamo/proofs";
 import { getCurrentStreak, getTotalProofScore } from "@/lib/dynamo/streaks";
-import HeatmapCalendar from "@/components/HeatmapCalendar";
-import ProofList from "@/components/ProofList";
+import ContributionHeatmap from "@/components/features/profile/ContributionHeatmap";
+import ProofList from "@/components/features/proof/ProofList";
 import Link from "next/link";
 import { Metadata } from "next";
 import pool from "@/lib/db/client";
-import WeeklyCoachReport from "@/components/WeeklyCoachReport";
+import WeeklyCoachReport from "@/components/features/report/WeeklyCoachReport";
 import Header from "@/components/Header";
 
 interface PageProps {
@@ -223,13 +223,13 @@ export default async function PublicProfilePage({ params }: PageProps) {
         {/* Реальний інтерактивний календар Heatmap */}
         <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl">
           <h2 className="text-lg font-bold mb-4">Activity Heatmap</h2>
-          <HeatmapCalendar proofs={heatmapData} />
+          <ContributionHeatmap proofs={heatmapData} />
         </div>
 
         {/* Реальний інтерактивний календар Heatmap */}
         <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl">
           <h2 className="text-lg font-bold mb-4">Activity Heatmap</h2>
-          <HeatmapCalendar proofs={heatmapData} />
+          <ContributionHeatmap proofs={heatmapData} />
         </div>
 
         {/* Блок тижневої аналітики від ШІ-коуча [E6] */}

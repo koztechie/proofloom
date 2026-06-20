@@ -1,20 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Proof } from "@/types";
 
-interface SubmissionFormProps {
+interface ChallengeFormProps {
   challengeId: string;
   initialProof: Proof | null;
   nextStreak: number;
 }
 
-export default function SubmissionForm({
+export default function ChallengeForm({
   challengeId,
   initialProof,
   nextStreak,
-}: SubmissionFormProps) {
+}: ChallengeFormProps) {
   const router = useRouter();
   const [proofText, setProofText] = useState("");
   const [proofUrl, setProofUrl] = useState("");
@@ -26,7 +26,7 @@ export default function SubmissionForm({
   );
   const [showAnimation, setShowAnimation] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = React.useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
@@ -75,7 +75,7 @@ export default function SubmissionForm({
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [challengeId, proofText, proofUrl, router]);
 
   if (activeProof) {
     return (
@@ -154,7 +154,7 @@ export default function SubmissionForm({
       className="space-y-6 bg-zinc-900 border border-zinc-800 p-8 rounded-xl shadow-2xl"
     >
       {error && (
-        <div className="rounded-lg border border-red-900 bg-red-950/50 p-4 text-sm text-red-400">
+        <div id="form-error" className="rounded-lg border border-red-900 bg-red-950/50 p-4 text-sm text-red-400">
           {error}
         </div>
       )}
@@ -174,6 +174,8 @@ export default function SubmissionForm({
             value={proofText}
             onChange={(e) => setProofText(e.target.value)}
             placeholder="Describe your progress today in detail."
+            aria-invalid={error ? "true" : "false"}
+            aria-describedby={error ? "form-error" : undefined}
             className="block w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-3 text-zinc-100 placeholder-zinc-500 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
           />
           <p className="text-xs text-zinc-500 mt-2 flex justify-between">
@@ -203,6 +205,8 @@ export default function SubmissionForm({
             value={proofUrl}
             onChange={(e) => setProofUrl(e.target.value)}
             placeholder="e.g. https://github.com/..."
+            aria-invalid={error ? "true" : "false"}
+            aria-describedby={error ? "form-error" : undefined}
             className="block w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-3 text-zinc-100 placeholder-zinc-500 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
           />
         </div>

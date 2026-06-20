@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getChallengeById } from "@/lib/db/challenges";
 import { getProofsByHandle } from "@/lib/dynamo/proofs";
 import { getCurrentStreak } from "@/lib/dynamo/streaks";
-import SubmissionForm from "./SubmissionForm";
+import ChallengeForm from "@/components/features/challenge/ChallengeForm";
 import Link from "next/link";
 import Header from "@/components/Header";
 
@@ -71,7 +71,7 @@ export default async function ChallengePage({ params }: PageProps) {
         </div>
 
         {/* Рендеримо клієнтську форму, передаючи початкові дані про звіт */}
-        <SubmissionForm
+        <ChallengeForm
           challengeId={challenge.id}
           initialProof={todayProof || null}
           nextStreak={currentStreak + (todayProof ? 0 : 1)}

@@ -1,3 +1,4 @@
+import React, { useMemo } from "react";
 import { Proof } from "@/types";
 
 interface EnrichedProof extends Proof {
@@ -8,7 +9,7 @@ interface ProofListProps {
   proofs: EnrichedProof[];
 }
 
-export default function ProofList({ proofs }: ProofListProps) {
+export default React.memo(function ProofList({ proofs }: ProofListProps) {
   if (proofs.length === 0) {
     return (
       <div className="text-center py-8 border border-dashed border-zinc-800 rounded-xl bg-zinc-900/20">
@@ -25,9 +26,13 @@ export default function ProofList({ proofs }: ProofListProps) {
     return "text-red-400 bg-red-950/40 border-red-800/50";
   };
 
+  const sortedProofs = useMemo(() => {
+    return [...proofs]; // Assume they are already sorted, but memoized to prevent re-calculations if filters were added
+  }, [proofs]);
+
   return (
     <div className="space-y-4">
-      {proofs.map((p) => {
+      {sortedProofs.map((p) => {
         const dateStr = p.sk.split("#")[1] || "";
         const formattedDate = new Date(dateStr).toLocaleDateString("en-US", {
           month: "short",
@@ -93,4 +98,4 @@ export default function ProofList({ proofs }: ProofListProps) {
       })}
     </div>
   );
-}
+});

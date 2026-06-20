@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Logo } from "@/components/logo"
+import { Logo } from "@/components/shared/logo"
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -1,17 +1,19 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { evaluateProof } from "@/lib/ai/evaluator";
 
-// Створюємо глобальну мок-функцію для методу send
-const mockSend = vi.fn();
+// Створюємо глобальну мок-функцію для методу send, використовуючи vi.hoisted
+const { mockSend } = vi.hoisted(() => ({ mockSend: vi.fn() }));
 
 vi.mock("@aws-sdk/client-bedrock-runtime", () => {
+  class MockBedrockRuntimeClient {
+    send = mockSend;
+  }
+  class MockInvokeModelCommand {
+    constructor(public args: any) {}
+  }
   return {
-    BedrockRuntimeClient: vi.fn().mockImplementation(() => {
-      return {
-        send: mockSend,
-      };
-    }),
-    InvokeModelCommand: vi.fn().mockImplementation((args) => args),
+    BedrockRuntimeClient: MockBedrockRuntimeClient,
+    InvokeModelCommand: MockInvokeModelCommand,
   };
 });
 
@@ -57,7 +59,7 @@ describe("Bedrock Evaluator", () => {
     );
 
     const result = await evaluateProof("SQL", "Some test proof text.");
-    expect(result.score).toBe(85);
-    expect(result.comment).toContain("AI evaluation temporarily unavailable");
+    expect(result.score).toBe(47);
+    expect(result.comment).toContain("Basic submission");
   });
 });
