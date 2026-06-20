@@ -1,96 +1,100 @@
-/**
- * app/api/cron/weekly-coach/route.ts
- *
- * Cron job: generates AI weekly-coach reports for every user with an active
- * public challenge. Runs on a Monday schedule (configured in vercel.json).
- *
- * Protected by CRON_SECRET (Vercel sets this header automatically).
- * Wrapped with withApiErrorHandler for consistent error envelopes and logging.
- *
- * Per-user failures are logged and silenced so one user's quota limit cannot
- * block the rest of the batch (anti-fragility).
- */
-
-import type { NextRequest } from "next/server";
-import { withApiErrorHandler } from "@/app/api/error-handler";
-import { successResponse } from "@/lib/api/response";
-import { UnauthorizedApiError } from "@/lib/api/errors";
-import { logger } from "@/lib/logger";
+import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db/client";
 import { generateAndSaveWeeklyReport } from "@/lib/reports/generator";
+import { logger } from "@/lib/logger";
+import crypto from "crypto";
 
-// Prevent Vercel from caching cron responses.
+// Забороняємо кешування крону на Vercel
 export const dynamic = "force-dynamic";
 
-interface ChallengeRow {
-  challenge_id: string;
-  skill_category: string;
-  title: string;
-  user_id: string;
-  handle: string;
-}
+export async function GET(req: NextRequest) {
+  const requestId = crypto.randomUUID();
 
-export const GET = withApiErrorHandler(async (req: NextRequest, _ctx, requestId) => {
-  // ── Cron secret guard ──────────────────────────────────────────────────────
-  if (req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
-    throw new UnauthorizedApiError("Invalid or missing cron secret.");
+  // 1. Захист за допомогою секрету
+  if (
+    req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`
+  ) {
+    logger.warn({ requestId }, "Unauthorized cron attempt");
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // ── Compute week_start (last Monday at midnight UTC) ───────────────────────
+  logger.info({ requestId }, "Starting weekly coach cron job");
+
+  // 2. Розраховуємо дату минулого понеділка (week_start)
   const now = new Date();
   const weekStart = new Date(now);
   weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7) - 7);
   weekStart.setHours(0, 0, 0, 0);
 
-  // ── Fetch all active public challenges ────────────────────────────────────
-  const { rows } = await pool.query<ChallengeRow>(`
-    SELECT
-      c.id          AS challenge_id,
-      c.skill_category,
-      c.title,
-      u.id          AS user_id,
-      u.handle
-    FROM challenges c
-    JOIN users u ON u.id = c.user_id
-    WHERE c.is_public = TRUE
-      AND c.streak_broken_at IS NULL
-  `);
+  try {
+    // 3. Витягуємо всі активні публічні челенджі з Aurora PostgreSQL
+    const { rows } = await pool.query(`
+      SELECT
+        c.id AS challenge_id,
+        c.skill_category,
+        c.title,
+        u.id AS user_id,
+        u.handle
+      FROM challenges c
+      JOIN users u ON u.id = c.user_id
+      WHERE c.is_public = TRUE
+        AND c.streak_broken_at IS NULL
+    `);
 
-  let processed = 0;
-  let failed = 0;
+    let processed = 0;
+    let failed = 0;
 
-  // ── Generate per-challenge report (isolated failures) ─────────────────────
-  for (const row of rows) {
-    try {
-      await generateAndSaveWeeklyReport(
-        row.user_id,
-        row.handle,
-        row.challenge_id,
-        row.skill_category,
-        row.title,
-        weekStart,
-      );
-      processed++;
-    } catch (err) {
-      // Anti-fragility: a single user's AI quota error must not abort the batch.
-      failed++;
-      logger.warn("Weekly report failed for user", {
-        requestId,
-        handle: row.handle,
-        challengeId: row.challenge_id,
-        error: err instanceof Error ? err.message : String(err),
-      });
+    // 4. Запускаємо генерацію звітів для кожного челенджу
+    for (const row of rows) {
+      try {
+        await generateAndSaveWeeklyReport(
+          row.user_id,
+          row.handle,
+          row.challenge_id,
+          row.skill_category,
+          row.title,
+          weekStart,
+        );
+        processed++;
+      } catch (err) {
+        failed++;
+        // ПРАВИЛЬНИЙ СИГНАТУРНИЙ ВИКЛИК PINO: об'єкт завжди першим!
+        logger.warn(
+          {
+            requestId,
+            handle: row.handle,
+            challengeId: row.challenge_id,
+            error: err instanceof Error ? err.message : String(err),
+          },
+          "Weekly report failed for user",
+        );
+      }
     }
-  }
 
-  return successResponse(
-    {
-      weekStart: weekStart.toISOString().split("T")[0],
+    logger.info(
+      {
+        requestId,
+        processed,
+        failed,
+        weekStart: weekStart.toISOString().split("T")[0],
+      },
+      "Weekly coach cron completed",
+    );
+    return NextResponse.json({
       processed,
-      failed,
-    },
-    undefined,
-    200,
-    requestId,
-  );
-});
+      weekStart: weekStart.toISOString().split("T")[0],
+    });
+  } catch (error: any) {
+    logger.error(
+      {
+        requestId,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      "Weekly coach cron failed critically",
+    );
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
+  }
+}
