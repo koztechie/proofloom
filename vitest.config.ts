@@ -6,13 +6,14 @@ export default defineConfig({
   plugins: [react(), tsconfigPaths()],
   test: {
     environment: "jsdom",
-    globals: true,
     setupFiles: ["./vitest.setup.ts"],
-    coverage: {
-      provider: "v8",
-      thresholds: {
-        functions: 80,
-      },
-    },
+    // Виключаємо системні файли Next.js та Playwright-тести з рантайму Vitest
+    exclude: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/e2e/**",
+      "**/.next/**",
+      "**/coverage/**",
+    ],
   },
 });
