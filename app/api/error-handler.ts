@@ -1,144 +1,61 @@
-/**
- * app/api/error-handler.ts
- *
- * Higher-order wrapper that standardises error handling across all API routes.
- *
- * What it does:
- *   1. Generates a unique requestId (crypto.randomUUID) for every request.
- *   2. Injects the requestId into every response via X-Request-Id header.
- *   3. Catches AppError subclasses → logs them and returns their structured payload.
- *   4. Catches the auth guard errors (UnauthorizedError / ForbiddenError from
- *      lib/auth/guards) → bridges them to the API error hierarchy.
- *   5. Catches unknown errors → logs the full stack internally but returns a
- *      generic InternalError message to the client (no stack leak in production).
- *
- * Usage:
- *   export const GET = withApiErrorHandler(async (req, ctx, requestId) => {
- *     const user = await requireAuth({ redirectOnFailure: false });
- *     ...
- *     return successResponse(data, undefined, 200, requestId);
- *   });
- */
-
-import type { NextRequest } from "next/server";
-import {
-  AppError,
-  InternalError,
-  UnauthorizedApiError,
-  ForbiddenApiError,
-} from "@/lib/api/errors";
+import { NextRequest, NextResponse } from "next/server";
+import { AppError } from "@/lib/api/errors";
 import { errorResponse } from "@/lib/api/response";
 import { logger } from "@/lib/logger";
-// Guard errors — bridged to API error hierarchy below
-import {
-  UnauthorizedError as GuardUnauthorizedError,
-  ForbiddenError as GuardForbiddenError,
-} from "@/lib/auth/guards";
+import crypto from "crypto";
 
-// ---------------------------------------------------------------------------
-// Handler type
-// ---------------------------------------------------------------------------
+type ApiHandler = (req: NextRequest, context: any) => Promise<NextResponse>;
 
-/**
- * Extended handler signature — receives the raw NextRequest, an optional
- * route context (for dynamic params), and the pre-generated requestId.
- */
-export type ApiHandler<TContext = unknown> = (
-  req: NextRequest,
-  ctx: TContext,
-  requestId: string,
-) => Promise<Response>;
-
-// ---------------------------------------------------------------------------
-// withApiErrorHandler
-// ---------------------------------------------------------------------------
-
-export function withApiErrorHandler<TContext = unknown>(
-  handler: ApiHandler<TContext>,
-): (req: NextRequest, ctx: TContext) => Promise<Response> {
-  return async (req: NextRequest, ctx: TContext): Promise<Response> => {
+export function withApiErrorHandler(handler: ApiHandler): ApiHandler {
+  return async (req: NextRequest, context: any) => {
     const requestId = crypto.randomUUID();
 
     try {
-      return await handler(req, ctx, requestId);
-    } catch (err: unknown) {
-      // ── Branch 1: Our typed AppError subclasses ──────────────────────────
-      if (err instanceof AppError) {
-        logger.warn("AppError caught", {
-          requestId,
-          code: err.code,
-          status: err.statusCode,
-          message: err.message,
-        });
+      // Виконуємо запит далі по ланцюжку
+      const response = await handler(req, context);
 
-        const res = errorResponse(
+      // Додаємо X-Request-Id у заголовки успішних відповідей [E7]
+      response.headers.set("X-Request-Id", requestId);
+      return response;
+    } catch (err) {
+      // ── Branch 1: Наші типізовані помилки системи (AppError) ──
+      if (err instanceof AppError) {
+        // ПРАВИЛЬНИЙ ВИКЛИК PINO: об'єкт метаданих завжди першим!
+        logger.warn(
+          {
+            requestId,
+            code: err.code,
+            status: err.statusCode,
+            message: err.message,
+          },
+          "AppError caught in API wrapper",
+        );
+
+        return errorResponse(
           err.code,
           err.message,
-          err.details,
+          err.toJSON().details,
           err.statusCode,
           requestId,
         );
-
-        // RateLimitError carries a retryAfter value — surface it as a header.
-        if ("retryAfter" in err && typeof (err as { retryAfter: unknown }).retryAfter === "number") {
-          res.headers.set("Retry-After", String((err as { retryAfter: number }).retryAfter));
-        }
-
-        return res;
       }
 
-      // ── Branch 2: Auth guard errors (lib/auth/guards) ────────────────────
-      // Bridge guard errors to the API hierarchy for a consistent envelope.
-      if (err instanceof GuardUnauthorizedError) {
-        logger.warn("Auth guard: Unauthorized", {
+      // ── Branch 2: Непередбачувані критичні помилки (Unhandled Errors) ──
+      // Логуємо деталі (включаючи stack trace), але не показуємо їх у проді з міркувань безпеки
+      logger.error(
+        {
           requestId,
-          message: err.message,
-        });
-        const bridged = new UnauthorizedApiError(err.message);
-        return errorResponse(
-          bridged.code,
-          bridged.message,
-          undefined,
-          bridged.statusCode,
-          requestId,
-        );
-      }
-
-      if (err instanceof GuardForbiddenError) {
-        logger.warn("Auth guard: Forbidden", {
-          requestId,
-          message: err.message,
-        });
-        const bridged = new ForbiddenApiError(err.message);
-        return errorResponse(
-          bridged.code,
-          bridged.message,
-          undefined,
-          bridged.statusCode,
-          requestId,
-        );
-      }
-
-      // ── Branch 3: Unexpected / unhandled error ───────────────────────────
-      const stack = err instanceof Error ? err.stack : String(err);
-      const rawMessage = err instanceof Error ? err.message : "Unknown error";
-
-      logger.error("Unhandled exception in API route", {
-        requestId,
-        message: rawMessage,
-        stack,
-      });
-
-      const internal = new InternalError();
-      // In development expose the real error message; hide it in production.
-      const clientMessage =
-        process.env.NODE_ENV === "production" ? internal.message : rawMessage;
+          error: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined,
+        },
+        "Unhandled critical error caught in API wrapper",
+      );
 
       return errorResponse(
-        internal.code,
-        clientMessage,
+        "INTERNAL_SERVER_ERROR",
+        "Something went wrong on our servers. Please try again later.",
         undefined,
-        internal.statusCode,
+        500,
         requestId,
       );
     }
