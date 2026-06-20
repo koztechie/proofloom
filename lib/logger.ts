@@ -1,68 +1,48 @@
 /**
  * lib/logger.ts
  *
- * Structured JSON logger designed for AWS CloudWatch Logs ingestion.
- *
- * Every log line is a single-line JSON object. CloudWatch can parse and
- * filter structured JSON automatically via Logs Insights queries such as:
- *   fields @timestamp, level, requestId, message
- *   | filter level = "error"
- *
- * Log levels: "info" | "warn" | "error"
- *
- * Usage:
- *   logger.info("Proof submitted", { requestId, userId: user.id });
- *   logger.error("Unexpected failure", { requestId, error });
+ * Structured JSON logger designed for AWS CloudWatch Logs ingestion and SRE observability.
  */
 
-export type LogLevel = "info" | "warn" | "error";
+import { AsyncLocalStorage } from "async_hooks";
+import pino from "pino";
+
+export type LogLevel = "info" | "warn" | "error" | "debug" | "fatal";
 
 export interface LogMeta {
-  /** Unique per-request trace identifier — set by withApiErrorHandler. */
   requestId?: string;
-  /** Any additional structured fields (serialisable values only). */
+  userId?: string;
   [key: string]: unknown;
 }
 
-interface LogEntry {
-  timestamp: string;
-  level: LogLevel;
-  message: string;
-  service: string;
-  [key: string]: unknown;
-}
+const isDev = process.env.NODE_ENV === "development";
 
-const SERVICE_NAME = process.env.SERVICE_NAME ?? "proofloom-api";
+// Async context to automatically bind requestId and userId
+export const loggerContext = new AsyncLocalStorage<LogMeta>();
 
-function buildEntry(level: LogLevel, message: string, meta: LogMeta): LogEntry {
-  return {
-    timestamp: new Date().toISOString(),
-    level,
-    message,
-    service: SERVICE_NAME,
-    ...meta,
-  };
-}
-
-function emit(level: LogLevel, message: string, meta: LogMeta = {}): void {
-  const entry = buildEntry(level, message, meta);
-  const line = JSON.stringify(entry);
-
-  if (level === "error") {
-    console.error(line);
-  } else {
-    console.log(line);
-  }
-}
-
-export const logger = {
-  info(message: string, meta?: LogMeta): void {
-    emit("info", message, meta);
+export const logger = pino({
+  level: process.env.LOG_LEVEL || "info",
+  formatters: {
+    level: (label) => ({ level: label }),
   },
-  warn(message: string, meta?: LogMeta): void {
-    emit("warn", message, meta);
+  redact: {
+    paths: ["password", "password_hash", "awsSecretKey", "secret", "token"],
+    censor: "[REDACTED]",
   },
-  error(message: string, meta?: LogMeta): void {
-    emit("error", message, meta);
+  ...(isDev
+    ? {
+        transport: {
+          target: "pino-pretty",
+          options: {
+            colorize: true,
+            singleLine: true,
+          },
+        },
+      }
+    : {}),
+  mixin() {
+    // Automatically inject context if available
+    const ctx = loggerContext.getStore();
+    return ctx || {};
   },
-} as const;
+});
