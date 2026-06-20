@@ -3,6 +3,8 @@ import pool from "@/lib/db/client";
 import { generateAndSaveWeeklyReport } from "@/lib/reports/generator";
 import { logger } from "@/lib/logger";
 import crypto from "crypto";
+import { createNotification } from "@/lib/notifications/in-app";
+import { sendEmail, weeklyReportReady } from "@/lib/notifications/email";
 
 // Забороняємо кешування крону на Vercel
 export const dynamic = "force-dynamic";
@@ -47,7 +49,7 @@ export async function GET(req: NextRequest) {
     // 4. Запускаємо генерацію звітів для кожного челенджу
     for (const row of rows) {
       try {
-        await generateAndSaveWeeklyReport(
+        const report = await generateAndSaveWeeklyReport(
           row.user_id,
           row.handle,
           row.challenge_id,
@@ -55,6 +57,30 @@ export async function GET(req: NextRequest) {
           row.title,
           weekStart,
         );
+
+        if (report) {
+          await createNotification({
+            userId: row.user_id,
+            type: "weekly_report",
+            title: "Weekly AI Coach Report Ready 📊",
+            message: `Your AI Coach report for ${row.title} is ready.`,
+            link: `/u/${row.handle}`,
+            priority: "normal",
+          });
+
+          const emailTemplate = weeklyReportReady(
+            { email: row.email, handle: row.handle, display_name: row.display_name },
+            report
+          );
+
+          await sendEmail({
+            to: row.email,
+            subject: emailTemplate.subject,
+            text: emailTemplate.text,
+            html: emailTemplate.html,
+          });
+        }
+
         processed++;
       } catch (err) {
         failed++;

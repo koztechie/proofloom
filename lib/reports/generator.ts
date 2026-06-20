@@ -17,7 +17,7 @@ export async function generateAndSaveWeeklyReport(
   skillCategory: string,
   challengeTitle: string,
   weekStart: Date,
-): Promise<void> {
+): Promise<any> {
   // 1. Зчитуємо звіти за поточний тиждень з NoSQL DynamoDB [E4]
   const proofs = await getWeeklyProofs(userHandle, weekStart);
 
@@ -75,4 +75,6 @@ export async function generateAndSaveWeeklyReport(
       report.recommendation,
     ],
   );
+
+  return report;
 }

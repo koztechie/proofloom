@@ -1,48 +1,36 @@
-import { withSentryConfig } from "@sentry/nextjs";
-
-import createBundleAnalyzer from "@next/bundle-analyzer";
-
-const withBundleAnalyzer = createBundleAnalyzer({
-  enabled: process.env.ANALYZE === "true",
-});
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  compress: true,
-  poweredByHeader: false,
   images: {
+    // Білий список доменів для оптимізації зображень Next.js
     remotePatterns: [
-      { protocol: "https", hostname: "avatars.githubusercontent.com" },
-      { protocol: "https", hostname: "www.gravatar.com" },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "avatars.githubusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "www.gravatar.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.amazonaws.com",
+      },
     ],
   },
   async headers() {
     return [
       {
-        source: "/_next/static/(.*)",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
-      {
-        source: "/(.*\\.(?:woff2|js|css|png|jpg|jpeg|gif|ico|svg))",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
-      {
         source: "/(.*)",
         headers: [
           {
             key: "Content-Security-Policy",
+            // Додано https://images.unsplash.com та https://www.gravatar.com у дозволені джерела зображень
             value:
-              "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://avatars.githubusercontent.com https://*.amazonaws.com https://www.gravatar.com; connect-src 'self' https://*.amazonaws.com https://vercel.live; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests",
+              "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.gravatar.com https://images.unsplash.com https://*.amazonaws.com; connect-src 'self' https://*.amazonaws.com https://vercel.live; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests",
           },
           {
             key: "Strict-Transport-Security",
@@ -70,14 +58,4 @@ const nextConfig = {
   },
 };
 
-export default withBundleAnalyzer(withSentryConfig(nextConfig, {
-  silent: true,
-  org: "mock-org",
-  project: "mock-project",
-  telemetry: false
-}, {
-  widenClientFileUpload: true,
-  transpileClientSDK: true,
-  hideSourceMaps: true,
-  disableLogger: true,
-}));
+export default nextConfig;

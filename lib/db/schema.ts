@@ -143,6 +143,31 @@ export const weeklyReports = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// notifications
+// ---------------------------------------------------------------------------
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    title: text("title").notNull(),
+    message: text("message").notNull(),
+    link: text("link"),
+    priority: text("priority").default("normal").notNull(),
+    isRead: boolean("is_read").default(false).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).default(
+      sql`NOW()`,
+    ),
+  },
+  (t) => [index("idx_notifications_user_id").on(t.userId)],
+);
+
+// ---------------------------------------------------------------------------
 // leaderboard_entries  (PG source-of-truth, DynamoDB used as read cache)
 // ---------------------------------------------------------------------------
 export const leaderboardEntries = pgTable(
@@ -175,6 +200,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   proofs: many(proofs),
   weeklyReports: many(weeklyReports),
   leaderboardEntries: many(leaderboardEntries),
+  notifications: many(notifications),
 }));
 
 export const challengesRelations = relations(challenges, ({ one, many }) => ({
@@ -216,3 +242,7 @@ export const leaderboardEntriesRelations = relations(
     }),
   }),
 );
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, { fields: [notifications.userId], references: [users.id] }),
+}));

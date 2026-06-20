@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import Logo from "@/components/shared/logo";
 import UserMenu from "@/components/features/auth/UserMenu";
+import NotificationBell from "@/components/features/notifications/NotificationBell";
 
 export default async function Header() {
   const session = await auth();
@@ -35,7 +36,10 @@ export default async function Header() {
 
       <div className="flex items-center space-x-4">
         {session?.user ? (
-          <UserMenu handle={session.user.handle} />
+          <>
+            <NotificationBell />
+            <UserMenu handle={session.user.handle} />
+          </>
         ) : (
           <>
             <Link

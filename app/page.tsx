@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/card";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { ContributionHeatmap } from "@/components/contribution-heatmap";
-import Image from "next/image";
 import { Suspense } from "react";
 
 const features = [
@@ -94,10 +93,11 @@ export default function HomePage() {
             url: "https://proofloom.vercel.app",
             potentialAction: {
               "@type": "SearchAction",
-              target: "https://proofloom.vercel.app/leaderboard?category={search_term_string}",
-              "query-input": "required name=search_term_string"
-            }
-          })
+              target:
+                "https://proofloom.vercel.app/leaderboard?category={search_term_string}",
+              "query-input": "required name=search_term_string",
+            },
+          }),
         }}
       />
       <script
@@ -109,10 +109,8 @@ export default function HomePage() {
             name: "ProofLoom",
             url: "https://proofloom.vercel.app",
             logo: "https://proofloom.vercel.app/logo.svg",
-            sameAs: [
-              "https://twitter.com/proofloom"
-            ]
-          })
+            sameAs: ["https://twitter.com/proofloom"],
+          }),
         }}
       />
       <Header />
@@ -148,17 +146,6 @@ export default function HomePage() {
               </Button>
             </div>
 
-            {/* Added LCP Image as requested */}
-            <div className="w-full max-w-4xl mt-8 overflow-hidden rounded-xl border border-zinc-800 shadow-2xl relative aspect-[21/9]">
-              <Image
-                src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=2000"
-                alt="ProofLoom Hero Preview"
-                fill
-                priority
-                className="object-cover"
-              />
-            </div>
-
             {/* Heatmap preview */}
             <Card className="mt-8 w-full max-w-3xl text-left">
               <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
@@ -182,88 +169,94 @@ export default function HomePage() {
           </div>
         </section>
 
-        <Suspense fallback={<div className="container py-20 text-center">Loading Features...</div>}>
+        <Suspense
+          fallback={
+            <div className="container py-20 text-center">
+              Loading Features...
+            </div>
+          }
+        >
           {/* Features */}
-        <section className="border-b border-border">
-          <div className="container py-20">
-            <div className="mx-auto flex max-w-2xl flex-col items-center gap-4 text-center">
-              <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-                Everything you need to prove you did the work
-              </h2>
-              <p className="text-pretty text-muted-foreground">
-                ProofLoom combines accountability, AI verification, and public
-                proof into one clean workflow.
-              </p>
-            </div>
-            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {features.map((feature) => (
-                <Card key={feature.title} className="h-full">
-                  <CardHeader>
-                    <div className="flex size-10 items-center justify-center rounded-md bg-secondary">
-                      <feature.icon className="size-5 text-primary" />
-                    </div>
-                    <CardTitle className="text-lg">{feature.title}</CardTitle>
-                    <CardDescription className="leading-relaxed">
-                      {feature.description}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* How it works */}
-        <section className="border-b border-border">
-          <div className="container py-20">
-            <div className="mx-auto flex max-w-2xl flex-col items-center gap-4 text-center">
-              <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-                Three steps to a proven streak
-              </h2>
-            </div>
-            <div className="mt-12 grid gap-6 md:grid-cols-3">
-              {steps.map((item) => (
-                <div key={item.step} className="flex flex-col gap-3">
-                  <span className="font-mono text-sm text-primary">
-                    {item.step}
-                  </span>
-                  <h3 className="text-xl font-medium">{item.title}</h3>
-                  <p className="leading-relaxed text-muted-foreground">
-                    {item.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section>
-          <div className="container py-20">
-            <Card className="overflow-hidden">
-              <CardContent className="flex flex-col items-center gap-6 py-14 text-center">
-                <h2 className="max-w-2xl text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-                  Your next skill is one daily proof away
+          <section className="border-b border-border">
+            <div className="container py-20">
+              <div className="mx-auto flex max-w-2xl flex-col items-center gap-4 text-center">
+                <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
+                  Everything you need to prove you did the work
                 </h2>
-                <p className="max-w-lg text-pretty text-muted-foreground">
-                  Join builders who show up every day. Start your first
-                  challenge in under a minute.
+                <p className="text-pretty text-muted-foreground">
+                  ProofLoom combines accountability, AI verification, and public
+                  proof into one clean workflow.
                 </p>
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <Button size="lg" asChild>
-                    <Link href="/auth/register">
-                      Create your account
-                      <ArrowRight data-icon="inline-end" />
-                    </Link>
-                  </Button>
-                  <Button size="lg" variant="outline" asChild>
-                    <Link href="/pricing">See pricing</Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
+              </div>
+              <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {features.map((feature) => (
+                  <Card key={feature.title} className="h-full">
+                    <CardHeader>
+                      <div className="flex size-10 items-center justify-center rounded-md bg-secondary">
+                        <feature.icon className="size-5 text-primary" />
+                      </div>
+                      <CardTitle className="text-lg">{feature.title}</CardTitle>
+                      <CardDescription className="leading-relaxed">
+                        {feature.description}
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* How it works */}
+          <section className="border-b border-border">
+            <div className="container py-20">
+              <div className="mx-auto flex max-w-2xl flex-col items-center gap-4 text-center">
+                <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
+                  Three steps to a proven streak
+                </h2>
+              </div>
+              <div className="mt-12 grid gap-6 md:grid-cols-3">
+                {steps.map((item) => (
+                  <div key={item.step} className="flex flex-col gap-3">
+                    <span className="font-mono text-sm text-primary">
+                      {item.step}
+                    </span>
+                    <h3 className="text-xl font-medium">{item.title}</h3>
+                    <p className="leading-relaxed text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* CTA */}
+          <section>
+            <div className="container py-20">
+              <Card className="overflow-hidden">
+                <CardContent className="flex flex-col items-center gap-6 py-14 text-center">
+                  <h2 className="max-w-2xl text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
+                    Your next skill is one daily proof away
+                  </h2>
+                  <p className="max-w-lg text-pretty text-muted-foreground">
+                    Join builders who show up every day. Start your first
+                    challenge in under a minute.
+                  </p>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <Button size="lg" asChild>
+                      <Link href="/auth/register">
+                        Create your account
+                        <ArrowRight data-icon="inline-end" />
+                      </Link>
+                    </Button>
+                    <Button size="lg" variant="outline" asChild>
+                      <Link href="/pricing">See pricing</Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </section>
         </Suspense>
       </main>
       <SiteFooter />
