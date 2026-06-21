@@ -1,8 +1,5 @@
 import { createUser } from "@/lib/db/users";
-import {
-  create as createChallenge,
-  ChallengeRow,
-} from "@/lib/db/repositories/challenge.repository";
+import { create as createChallenge } from "@/lib/db/repositories/challenge.repository";
 import { submitProof } from "@/lib/dynamo/proofs";
 import pool from "@/lib/db/client";
 import crypto from "crypto";
@@ -12,9 +9,7 @@ export async function userFactory(overrides?: Partial<any>) {
   const handle =
     overrides?.handle || `user_${crypto.randomUUID().substring(0, 8)}`;
   const email = overrides?.email || `${handle}@example.com`;
-  const displayName = overrides?.displayName || "Test User";
 
-  // Якщо ID передано примусово (наприклад, для моку сесії)
   if (id) {
     const bcrypt = require("bcryptjs");
     const passwordHash = await bcrypt.hash("Password123", 10);
@@ -25,26 +20,25 @@ export async function userFactory(overrides?: Partial<any>) {
       ON CONFLICT DO NOTHING
       RETURNING *;
     `,
-      [id, handle, email, passwordHash, displayName],
+      [id, handle, email, passwordHash, "Test User"],
     );
     return rows[0];
   }
 
-  return await createUser(handle, email, "Password123", displayName);
+  return await createUser(handle, email, "Password123", "Test User");
 }
 
 export async function challengeFactory(overrides?: Partial<any> | string) {
-  let userId: string | undefined;
+  let userId: string;
 
   if (typeof overrides === "string") {
     userId = overrides;
   } else {
-    userId = overrides?.userId;
-  }
-
-  if (!userId) {
-    const user = await userFactory();
-    userId = user.id;
+    userId = overrides?.userId || "";
+    if (!userId) {
+      const user = await userFactory();
+      userId = user.id;
+    }
   }
 
   const skillCategory =
