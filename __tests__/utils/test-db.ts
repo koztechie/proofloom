@@ -1,43 +1,39 @@
-import { pool } from "../../lib/db/client";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
-import path from "path";
-
-// Attach an event listener to ensure all new connections default to our test schema
-pool.on("connect", (client) => {
-  client.query("SET search_path TO proofloom_test, public;").catch(console.error);
-});
-
-export const testDb = drizzle(pool);
+import pool from "@/lib/db/client";
 
 export async function setupTestDb() {
-  // Create schema explicitly
+  // Виводимо санітарну діагностику в консоль при кожному запуску тестів [E2]
+  console.log("=== [TEST DB SETUP DIAGNOSTICS] ===");
+  console.log("PGHOST:", process.env.PGHOST);
+  console.log("PGUSER:", process.env.PGUSER);
+  console.log(
+    "AWS_ACCESS_KEY_ID:",
+    process.env.AWS_ACCESS_KEY_ID
+      ? `${process.env.AWS_ACCESS_KEY_ID.substring(0, 8)}...`
+      : "undefined",
+  );
+  console.log(
+    "AWS_SECRET_ACCESS_KEY exists:",
+    !!process.env.AWS_SECRET_ACCESS_KEY,
+  );
+  console.log("===================================");
+
   await pool.query("CREATE SCHEMA IF NOT EXISTS proofloom_test;");
-  
-  // Need to set for current connected client as well if any commands run right here
-  await pool.query("SET search_path TO proofloom_test, public;");
-  
-  // Apply migrations
-  await migrate(testDb, { migrationsFolder: path.resolve(process.cwd(), "lib/db/migrations") });
+  await truncateTestDb();
 }
 
 export async function truncateTestDb() {
-  const res = await pool.query(`
-    SELECT tablename 
-    FROM pg_tables 
-    WHERE schemaname = 'proofloom_test' 
-      AND tablename != 'drizzle__migrations'
-      AND tablename != '__drizzle_migrations';
-  `);
-  
-  const tables = res.rows.map(r => `"proofloom_test"."${r.tablename}"`).join(", ");
-  
-  if (tables) {
-    await pool.query(`TRUNCATE ${tables} CASCADE;`);
+  const tables = [
+    "notifications",
+    "weekly_reports",
+    "proofs",
+    "challenges",
+    "users",
+  ];
+  for (const table of tables) {
+    await pool.query(`TRUNCATE TABLE proofloom_test.${table} CASCADE;`);
   }
 }
 
 export async function teardownTestDb() {
-  // Cleanly close the pool if needed
-  await pool.end();
+  // Закриваємо пул
 }

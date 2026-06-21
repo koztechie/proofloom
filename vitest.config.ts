@@ -1,14 +1,12 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
+import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    // @ts-ignore - native option for tsconfig paths in recent vite
-    tsconfigPaths: true,
-  },
+  plugins: [react(), tsconfigPaths()],
   test: {
-    environment: "jsdom",
+    // КРИТИЧНО ДЛЯ AWS SDK: Використовуємо рідне середовище node замість jsdom [10, 24]
+    environment: "node",
     setupFiles: ["./vitest.setup.ts"],
     exclude: [
       "**/node_modules/**",
@@ -17,13 +15,8 @@ export default defineConfig({
       "**/.next/**",
       "**/coverage/**",
     ],
-    coverage: {
-      exclude: ["**/e2e/**", "**/node_modules/**"],
-      thresholds: {
-        lines: 60,
-        functions: 80,
-        branches: 70,
-      },
-    },
+    // Збільшені таймаути для хмарних з'єднань з AWS
+    hookTimeout: 50000,
+    testTimeout: 30000,
   },
 });

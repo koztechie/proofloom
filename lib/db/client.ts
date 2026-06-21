@@ -3,30 +3,19 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Signer } from "@aws-sdk/rds-signer";
 import * as schema from "./schema";
 
-const clientConfig: any = {
+const signer = new Signer({
   hostname: process.env.PGHOST || "",
   port: parseInt(process.env.PGPORT || "5432"),
   username: process.env.PGUSER || "",
   region: process.env.AWS_REGION || "us-east-1",
-};
+  // АНТИКРИХКІСТЬ: Передаємо облікові дані ЯВНО.
+  // Це запобігає збоям кешування дефолтного провайдера AWS SDK у тестах! [24]
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+  },
+});
 
-// Антикрихкість: якщо в .env.local ключі записані як пусті лапки "",
-// ми ігноруємо їх, дозволяючи SDK безперешкодно зчитати твої системні ~/.aws/credentials!
-if (
-  process.env.AWS_ACCESS_KEY_ID &&
-  process.env.AWS_ACCESS_KEY_ID.trim() !== "" &&
-  process.env.AWS_SECRET_ACCESS_KEY &&
-  process.env.AWS_SECRET_ACCESS_KEY.trim() !== ""
-) {
-  clientConfig.credentials = {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  };
-}
-
-const signer = new Signer(clientConfig);
-
-// Робимо пул іменованим експортом [1.1.3]
 export const pool = new Pool({
   host: process.env.PGHOST,
   port: parseInt(process.env.PGPORT || "5432"),

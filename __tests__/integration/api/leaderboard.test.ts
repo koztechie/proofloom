@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll } from "vitest";
+import { describe, test, expect } from "vitest";
 import { userFactory, challengeFactory, proofFactory } from "../../fixtures";
 import { getLeaderboard } from "@/lib/dynamo/leaderboard";
 
@@ -7,7 +7,6 @@ describe("Leaderboard Page API", () => {
     const user1 = await userFactory();
     const user2 = await userFactory();
 
-    // Передаємо параметри строго всередині об'єкта overrides [E2]
     const challenge1 = await challengeFactory({
       userId: user1.id,
       skillCategory: "SQL",
@@ -17,7 +16,6 @@ describe("Leaderboard Page API", () => {
       skillCategory: "SQL",
     });
 
-    // Створюємо записи звітів через фабрику [E2]
     await proofFactory({
       handle: user1.handle,
       challengeId: challenge1.id,
@@ -33,7 +31,7 @@ describe("Leaderboard Page API", () => {
 
     const leaderboard = await getLeaderboard("SQL");
     expect(leaderboard.length).toBeGreaterThanOrEqual(2);
-    expect(leaderboard[0].total_score).toBe(95);
-    expect(leaderboard[1].total_score).toBe(90);
+    expect(leaderboard[0]!.total_score).toBe(95); // Додано оператор ! для суворої типізації
+    expect(leaderboard[1]!.total_score).toBe(90); // Додано оператор !
   });
 });

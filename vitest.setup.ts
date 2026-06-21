@@ -1,22 +1,22 @@
-import "@testing-library/jest-dom/vitest";
-import { setupServer } from "msw/node";
-import { http, HttpResponse } from "msw";
+// КРИТИЧНО ДЛЯ WORKER THREADS: Завантажуємо змінні оточення у першій лінії запуску воркера!
+import * as dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
 
 import { beforeAll, afterEach, afterAll } from "vitest";
-import { setupTestDb, truncateTestDb, teardownTestDb } from "./__tests__/utils/test-db";
+import { setupServer } from "msw/node";
+import {
+  setupTestDb,
+  truncateTestDb,
+  teardownTestDb,
+} from "./__tests__/utils/test-db";
 
-export const server = setupServer(
-  http.post("https://bedrock-runtime.*.amazonaws.com/*", () => {
-    // Return a mocked success response from Bedrock
-    return HttpResponse.json({
-      body: Buffer.from(JSON.stringify({ score: 85, comment: "Mocked MSW Comment" })).toString("base64"),
-      contentType: "application/json",
-    });
-  })
-);
+// Ініціалізуємо порожній MSW-сервер для перехоплення HTTP-запитів [10]
+export const server = setupServer();
 
 beforeAll(async () => {
-  server.listen({ onUnhandledRequest: "warn" });
+  // КРИТИЧНО ДЛЯ AWS SDK: Змушуємо MSW пропускати (bypass) всі виклики,
+  // які ми не мокали явно (наприклад, запити RDS Signer до AWS STS), щоб уникнути PAM помилок [10, 24]
+  server.listen({ onUnhandledRequest: "bypass" });
   await setupTestDb();
 });
 
