@@ -8,24 +8,34 @@ import pool from "@/lib/db/client";
 import crypto from "crypto";
 
 export async function userFactory(overrides?: Partial<any>) {
+  const id = overrides?.id || undefined;
   const handle =
     overrides?.handle || `user_${crypto.randomUUID().substring(0, 8)}`;
   const email = overrides?.email || `${handle}@example.com`;
-  const passwordHash = await bcryptHash("Password123");
   const displayName = overrides?.displayName || "Test User";
 
-  return await createUser(handle, email, "Password123", displayName);
-}
+  // Якщо ID передано примусово (наприклад, для моку сесії)
+  if (id) {
+    const bcrypt = require("bcryptjs");
+    const passwordHash = await bcrypt.hash("Password123", 10);
+    const { rows } = await pool.query(
+      `
+      INSERT INTO users (id, handle, email, password_hash, display_name)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT DO NOTHING
+      RETURNING *;
+    `,
+      [id, handle, email, passwordHash, displayName],
+    );
+    return rows[0];
+  }
 
-async function bcryptHash(pwd: string) {
-  const bcrypt = require("bcryptjs");
-  return await bcrypt.hash(pwd, 10);
+  return await createUser(handle, email, "Password123", displayName);
 }
 
 export async function challengeFactory(overrides?: Partial<any> | string) {
   let userId: string | undefined;
 
-  // Адаптивна сигнатура для підтримки старих і нових викликів у тестах
   if (typeof overrides === "string") {
     userId = overrides;
   } else {

@@ -16,7 +16,12 @@ export async function setupTestDb() {
   );
   console.log("===================================");
 
+  // Створюємо схему, якщо її немає [E2]
   await pool.query("CREATE SCHEMA IF NOT EXISTS proofloom_test;");
+
+  // Явно встановлюємо search_path для поточного з'єднання мігратора [E2]
+  await pool.query("SET search_path TO proofloom_test;");
+
   await truncateTestDb();
 }
 
@@ -34,5 +39,5 @@ export async function truncateTestDb() {
 }
 
 export async function teardownTestDb() {
-  await pool.end(); // КРИТИЧНО: закриваємо пул для завершення процесів
+  await pool.end(); // Закриваємо з'єднання пулу
 }
