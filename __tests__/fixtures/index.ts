@@ -11,30 +11,46 @@ export async function userFactory(overrides?: Partial<any>) {
   const handle =
     overrides?.handle || `user_${crypto.randomUUID().substring(0, 8)}`;
   const email = overrides?.email || `${handle}@example.com`;
-  const passwordHash = await bcryptHash("password"); // або bcrypt.hash
+  const passwordHash = await bcryptHash("Password123");
   const displayName = overrides?.displayName || "Test User";
 
   return await createUser(handle, email, "Password123", displayName);
 }
 
-// Допоміжна функція швидкого хешування для тестів
 async function bcryptHash(pwd: string) {
   const bcrypt = require("bcryptjs");
   return await bcrypt.hash(pwd, 10);
 }
 
-export async function challengeFactory(overrides?: Partial<any>) {
-  let userId = overrides?.userId;
+export async function challengeFactory(overrides?: Partial<any> | string) {
+  let userId: string | undefined;
+
+  // Адаптивна сигнатура для підтримки старих і нових викликів у тестах
+  if (typeof overrides === "string") {
+    userId = overrides;
+  } else {
+    userId = overrides?.userId;
+  }
+
   if (!userId) {
     const user = await userFactory();
     userId = user.id;
   }
 
-  const skillCategory = overrides?.skillCategory || "SQL";
-  const title = overrides?.title || "Test Challenge";
-  const targetDays = overrides?.targetDays || 30;
+  const skillCategory =
+    typeof overrides === "string" ? "SQL" : overrides?.skillCategory || "SQL";
+  const title =
+    typeof overrides === "string"
+      ? "Test Challenge"
+      : overrides?.title || "Test Challenge";
+  const targetDays =
+    typeof overrides === "string" ? 30 : overrides?.targetDays || 30;
   const isPublic =
-    overrides?.isPublic !== undefined ? overrides.isPublic : true;
+    typeof overrides === "string"
+      ? true
+      : overrides?.isPublic !== undefined
+        ? overrides.isPublic
+        : true;
 
   return await createChallenge({
     userId,
