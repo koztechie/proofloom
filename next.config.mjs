@@ -22,15 +22,20 @@ const nextConfig = {
     ],
   },
   async headers() {
+    const isDev = process.env.NODE_ENV !== 'production';
+    const scriptSrc = isDev 
+      ? "'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live"
+      : "'self' 'unsafe-inline' https://vercel.live";
+      
+    const csp = `default-src 'self'; script-src ${scriptSrc}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.gravatar.com https://images.unsplash.com https://*.amazonaws.com; connect-src 'self' https://*.amazonaws.com https://vercel.live; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests; report-uri /api/csp-report`;
+
     return [
       {
         source: "/(.*)",
         headers: [
           {
             key: "Content-Security-Policy",
-            // Додано https://images.unsplash.com та https://www.gravatar.com у дозволені джерела зображень
-            value:
-              "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.gravatar.com https://images.unsplash.com https://*.amazonaws.com; connect-src 'self' https://*.amazonaws.com https://vercel.live; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests",
+            value: csp,
           },
           {
             key: "Strict-Transport-Security",
@@ -51,6 +56,15 @@ const nextConfig = {
           {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
+          },
+        ],
+      },
+      {
+        source: "/api/:path*",
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value: "noindex, nofollow",
           },
         ],
       },

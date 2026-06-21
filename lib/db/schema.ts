@@ -5,6 +5,7 @@
 
 import {
   pgTable,
+  pgSchema,
   uuid,
   text,
   boolean,
@@ -20,40 +21,51 @@ import {
 import { relations } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 
+// КРИТИЧНО: Для тестів явно використовуємо схему proofloom_test.
+// Це усуває race condition з search_path через pg.Pool, бо drizzle генерує
+// SQL з повним префіксом схеми ("proofloom_test"."users") замість покладання
+// на search_path. У production залишається public (default schema).
+const isTest = process.env.NODE_ENV === "test";
+const table = (isTest ? pgSchema("proofloom_test").table : pgTable) as typeof pgTable;
+
 // ---------------------------------------------------------------------------
 // users
 // ---------------------------------------------------------------------------
-export const users = pgTable("users", {
-  id: uuid("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  handle: text("handle").unique().notNull(),
-  email: text("email").unique().notNull(),
-  passwordHash: text("password_hash").notNull(),
-  displayName: text("display_name"),
-  bio: text("bio"),
-  avatarUrl: text("avatar_url"),
-  location: text("location"),
-  websiteUrl: text("website_url"),
-  twitterUrl: text("twitter_url"),
-  githubUrl: text("github_url"),
-  linkedinUrl: text("linkedin_url"),
-  avatarType: text("avatar_type").default("initials").notNull(),
-  /** RBAC role — maps to the Role enum in lib/auth/roles.ts */
-  role: text("role").default("USER").notNull(),
-  /** Soft-ban flag: false = account is suspended and cannot log in */
-  isActive: boolean("is_active").default(true).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).default(
-    sql`NOW()`,
-  ),
-}, (t) => [
-  check("users_role_check", sql`${t.role} IN ('USER', 'ADMIN', 'MODERATOR')`)
-]);
+export const users = table(
+  "users",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    handle: text("handle").unique().notNull(),
+    email: text("email").unique().notNull(),
+    passwordHash: text("password_hash").notNull(),
+    displayName: text("display_name"),
+    bio: text("bio"),
+    avatarUrl: text("avatar_url"),
+    location: text("location"),
+    websiteUrl: text("website_url"),
+    twitterUrl: text("twitter_url"),
+    githubUrl: text("github_url"),
+    linkedinUrl: text("linkedin_url"),
+    avatarType: text("avatar_type").default("initials").notNull(),
+    /** RBAC role — maps to the Role enum in lib/auth/roles.ts */
+    role: text("role").default("USER").notNull(),
+    /** Soft-ban flag: false = account is suspended and cannot log in */
+    isActive: boolean("is_active").default(true).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).default(
+      sql`NOW()`,
+    ),
+  },
+  (t) => [
+    check("users_role_check", sql`${t.role} IN ('USER', 'ADMIN', 'MODERATOR')`),
+  ],
+);
 
 // ---------------------------------------------------------------------------
 // challenges
 // ---------------------------------------------------------------------------
-export const challenges = pgTable(
+export const challenges = table(
   "challenges",
   {
     id: uuid("id")
@@ -75,14 +87,17 @@ export const challenges = pgTable(
   (t) => [
     index("idx_challenges_user_id").on(t.userId),
     index("idx_challenges_skill_category").on(t.skillCategory),
-    check("challenges_target_days_check", sql`${t.targetDays} BETWEEN 7 AND 365`),
+    check(
+      "challenges_target_days_check",
+      sql`${t.targetDays} BETWEEN 7 AND 365`,
+    ),
   ],
 );
 
 // ---------------------------------------------------------------------------
 // proofs  (migrated from DynamoDB per-user proof records into PG)
 // ---------------------------------------------------------------------------
-export const proofs = pgTable(
+export const proofs = table(
   "proofs",
   {
     id: uuid("id")
@@ -113,7 +128,7 @@ export const proofs = pgTable(
 // ---------------------------------------------------------------------------
 // weekly_reports
 // ---------------------------------------------------------------------------
-export const weeklyReports = pgTable(
+export const weeklyReports = table(
   "weekly_reports",
   {
     id: uuid("id")
@@ -140,13 +155,11 @@ export const weeklyReports = pgTable(
     ),
   },
   (t) => [
-    // Composite unique constraint kept in parity with schema.sql
     uniqueIndex("uq_weekly_reports_user_challenge_week").on(
       t.userId,
       t.challengeId,
       t.weekStart,
     ),
-    // Covering index for dashboard queries sorted by week descending
     index("idx_weekly_reports_user_id").on(t.userId, t.weekStart),
   ],
 );
@@ -154,7 +167,7 @@ export const weeklyReports = pgTable(
 // ---------------------------------------------------------------------------
 // notifications
 // ---------------------------------------------------------------------------
-export const notifications = pgTable(
+export const notifications = table(
   "notifications",
   {
     id: uuid("id")
@@ -182,7 +195,7 @@ export const notifications = pgTable(
 // ---------------------------------------------------------------------------
 // leaderboard_entries  (PG source-of-truth, DynamoDB used as read cache)
 // ---------------------------------------------------------------------------
-export const leaderboardEntries = pgTable(
+export const leaderboardEntries = table(
   "leaderboard_entries",
   {
     userId: uuid("user_id")

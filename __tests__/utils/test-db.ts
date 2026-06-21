@@ -21,8 +21,6 @@ export async function setupTestDb() {
 
   // Явно встановлюємо search_path для поточного з'єднання мігратора [E2]
   await pool.query("SET search_path TO proofloom_test;");
-
-  await truncateTestDb();
 }
 
 export async function truncateTestDb() {

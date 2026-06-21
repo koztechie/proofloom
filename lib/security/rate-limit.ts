@@ -55,6 +55,8 @@ export const LIMITS = {
   AUTH: { limit: 10, intervalSeconds: 60 },
   /** /api/reports/generate-now — 3 req/min per user handle */
   REPORT_GENERATE: { limit: 3, intervalSeconds: 60 },
+  /** Public endpoints — 30 req/min per IP */
+  PUBLIC_LISTING: { limit: 30, intervalSeconds: 60 },
 } as const;
 
 // ---------------------------------------------------------------------------

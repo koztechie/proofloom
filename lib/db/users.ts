@@ -40,7 +40,7 @@ export async function createUser(
   passwordPlain: string,
   displayName?: string,
 ): Promise<User> {
-  const passwordHash = await bcrypt.hash(passwordPlain, 10);
+  const passwordHash = await bcrypt.hash(passwordPlain, 12);
   const row = await userRepo.create({
     handle,
     email,

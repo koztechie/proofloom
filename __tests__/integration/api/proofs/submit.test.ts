@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 import { userFactory, challengeFactory } from "../../../fixtures";
 import { auth } from "@/lib/auth";
 import { docClient } from "@/lib/dynamo/client";
+import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
@@ -13,6 +14,9 @@ vi.mock("@/lib/dynamo/client", () => ({
   docClient: {
     send: vi.fn().mockResolvedValue({}),
   },
+  sendWithRetry: vi.fn().mockImplementation(async (cmd) => {
+    return { Items: [], Item: { tokens: 5, last_refill: Date.now() } };
+  }),
 }));
 
 describe("POST /api/proofs/submit", () => {
@@ -33,8 +37,8 @@ describe("POST /api/proofs/submit", () => {
       method: "POST",
       body: JSON.stringify({
         challengeId: challenge.id,
-        content: "Did my practice today!",
-        url: "http://example.com"
+        proofText: "Did my practice today and successfully completed three very long and complex exercises to demonstrate real effort.",
+        proofUrl: "http://example.com"
       }),
       headers: { "Content-Type": "application/json" }
     });
@@ -42,9 +46,9 @@ describe("POST /api/proofs/submit", () => {
     const res = await POST(req, {});
     const data = await res.json();
     
-    expect(res.status).toBe(200);
-    expect(data).toHaveProperty("id");
-    expect(data.score).toBeDefined();
+    expect(res.status).toBe(201);
+    expect(data.data).toHaveProperty("score");
+    expect(data.data.score).toBeDefined();
     
     // Check DynamoDB was called for rate limit
     expect(docClient.send).toHaveBeenCalled();
@@ -56,15 +60,12 @@ describe("POST /api/proofs/submit", () => {
     // For simplicity, we just mock the exact docClient behavior for a rate limited request:
     // (return 0 tokens and zero elapsed time)
     (docClient.send as any).mockResolvedValueOnce({
-      Item: {
-        tokens: 0,
-        last_refill: Date.now(),
-      }
+      Item: { tokens: 0, last_refill: Date.now() }
     });
 
     const req = new NextRequest("http://localhost/api/proofs/submit", {
       method: "POST",
-      body: JSON.stringify({ challengeId: challenge.id, content: "Spam" }),
+      body: JSON.stringify({ challengeId: challenge.id, proofText: "Did my practice today and successfully completed three very long and complex exercises to demonstrate real effort." }),
       headers: { "Content-Type": "application/json" }
     });
 

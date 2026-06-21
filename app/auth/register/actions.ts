@@ -11,6 +11,7 @@ import { createUser, getUserByEmail, getUserByHandle } from "@/lib/db/users";
 import { signIn } from "@/lib/auth";
 import { isReservedHandle } from "@/lib/reservedWords";
 import { UserRegistrationSchema } from "@/lib/validation/schemas";
+import { sanitizeText } from "@/lib/security/sanitize";
 
 export async function registerUser(prevState: unknown, formData: FormData) {
   // ── 1. Zod schema validation ─────────────────────────────────────────────
@@ -51,7 +52,7 @@ export async function registerUser(prevState: unknown, formData: FormData) {
       return { error: "This username is already taken." };
     }
 
-    await createUser(handle, email, password, displayName);
+    await createUser(handle, email, password, sanitizeText(displayName));
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : "Something went wrong.";

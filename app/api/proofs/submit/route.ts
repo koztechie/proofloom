@@ -29,6 +29,7 @@ import { getChallengeById } from "@/lib/db/challenges";
 import { evaluateProof } from "@/lib/ai/evaluator";
 import { submitProof, getProofsByHandle } from "@/lib/dynamo/proofs";
 import { getCurrentStreak } from "@/lib/dynamo/streaks";
+import { sanitizeText } from "@/lib/security/sanitize";
 
 export const POST = withApiErrorHandler(async (req: NextRequest, _ctx, requestId) => {
   // ── 1. Authentication ──────────────────────────────────────────────────────
@@ -108,7 +109,7 @@ export const POST = withApiErrorHandler(async (req: NextRequest, _ctx, requestId
   await submitProof({
     handle: user.handle,
     challengeId,
-    proofText,
+    proofText: sanitizeText(proofText),
     ...(proofUrl !== undefined ? { proofUrl } : {}),
     streakDay,
     aiScore: evaluation.score,

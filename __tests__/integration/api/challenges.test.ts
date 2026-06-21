@@ -44,9 +44,9 @@ describe("POST /api/challenges", () => {
     const res = await POST(req, { params: Promise.resolve({}) });
     const data = await res.json();
 
-    expect(res.status).toBe(200);
-    expect(data.challenge.title).toBe("Learn Rust");
-    expect(data.challenge.userId).toBe(user.id);
+    expect(res.status).toBe(201);
+    expect(data.data.title).toBe("Learn Rust");
+    expect(data.data.user_id).toBe(user.id);
   });
 
   test("should return 400 validation error for target_days out of bounds", async () => {

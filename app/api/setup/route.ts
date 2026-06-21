@@ -4,6 +4,9 @@ import pool from "@/lib/db/client";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  if (process.env.NODE_ENV !== "development") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   try {
     const sql = `
       CREATE EXTENSION IF NOT EXISTS "pgcrypto";

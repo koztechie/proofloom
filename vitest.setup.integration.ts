@@ -18,7 +18,6 @@ beforeAll(async () => {
 
 afterEach(async () => {
   server.resetHandlers();
-  await truncateTestDb();
 });
 
 afterAll(async () => {

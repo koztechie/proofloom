@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { updateUserProfile } from "@/lib/db/users";
 import { revalidatePath } from "next/cache";
+import { sanitizeText } from "@/lib/security/sanitize";
 
 export async function updateProfileSettings(
   prevState: any,
@@ -31,8 +32,8 @@ export async function updateProfileSettings(
 
   try {
     await updateUserProfile(session.user.id, {
-      displayName: displayName?.trim() || null,
-      bio: bio?.trim() || null,
+      displayName: sanitizeText(displayName?.trim() || null),
+      bio: sanitizeText(bio?.trim() || null),
       location: location?.trim() || null,
       websiteUrl: websiteUrl?.trim() || null,
       twitterUrl: twitterUrl?.trim() || null,
