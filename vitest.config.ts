@@ -10,7 +10,6 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
-    // Виключаємо системні файли Next.js та Playwright-тести з рантайму Vitest
     exclude: [
       "**/node_modules/**",
       "**/dist/**",
@@ -18,5 +17,13 @@ export default defineConfig({
       "**/.next/**",
       "**/coverage/**",
     ],
+    coverage: {
+      exclude: ["**/e2e/**", "**/node_modules/**"],
+      thresholds: {
+        lines: 60,
+        functions: 80,
+        branches: 70,
+      },
+    },
   },
 });

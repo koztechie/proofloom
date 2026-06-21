@@ -3,6 +3,7 @@ import { setupServer } from "msw/node";
 import { http, HttpResponse } from "msw";
 
 import { beforeAll, afterEach, afterAll } from "vitest";
+import { setupTestDb, truncateTestDb, teardownTestDb } from "./__tests__/utils/test-db";
 
 export const server = setupServer(
   http.post("https://bedrock-runtime.*.amazonaws.com/*", () => {
@@ -14,6 +15,17 @@ export const server = setupServer(
   })
 );
 
-beforeAll(() => server.listen({ onUnhandledRequest: "warn" }));
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+beforeAll(async () => {
+  server.listen({ onUnhandledRequest: "warn" });
+  await setupTestDb();
+});
+
+afterEach(async () => {
+  server.resetHandlers();
+  await truncateTestDb();
+});
+
+afterAll(async () => {
+  server.close();
+  await teardownTestDb();
+});
