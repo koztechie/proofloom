@@ -1,7 +1,6 @@
 import pool from "@/lib/db/client";
 
 export async function setupTestDb() {
-  // Виводимо санітарну діагностику в консоль при кожному запуску тестів [E2]
   console.log("=== [TEST DB SETUP DIAGNOSTICS] ===");
   console.log("PGHOST:", process.env.PGHOST);
   console.log("PGUSER:", process.env.PGUSER);
@@ -35,5 +34,5 @@ export async function truncateTestDb() {
 }
 
 export async function teardownTestDb() {
-  // Закриваємо пул
+  await pool.end(); // КРИТИЧНО: закриваємо пул для завершення процесів
 }

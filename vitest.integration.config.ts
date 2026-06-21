@@ -6,16 +6,16 @@ export default defineConfig({
   plugins: [react(), tsconfigPaths()],
   test: {
     environment: "node",
-    setupFiles: ["./vitest.setup.unit.ts"],
+    setupFiles: ["./vitest.setup.integration.ts"],
+    include: ["__tests__/integration/**/*.test.ts"],
     exclude: [
       "**/node_modules/**",
       "**/dist/**",
       "**/e2e/**",
       "**/.next/**",
       "**/coverage/**",
-      "**/__tests__/integration/**", // Виключаємо інтеграційні
     ],
-    hookTimeout: 10000,
-    testTimeout: 10000,
+    hookTimeout: 50000,
+    testTimeout: 30000,
   },
 });

@@ -8,20 +8,21 @@ const signer = new Signer({
   port: parseInt(process.env.PGPORT || "5432"),
   username: process.env.PGUSER || "",
   region: process.env.AWS_REGION || "us-east-1",
-  // АНТИКРИХКІСТЬ: Передаємо облікові дані ЯВНО.
-  // Це запобігає збоям кешування дефолтного провайдера AWS SDK у тестах! [24]
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
   },
 });
 
+// КРИТИЧНО: Використовуємо строковий пароль для уникнення PAM помилок
+const password = process.env.PGPASSWORD || "";
+
 export const pool = new Pool({
   host: process.env.PGHOST,
   port: parseInt(process.env.PGPORT || "5432"),
   database: process.env.PGDATABASE,
   user: process.env.PGUSER,
-  password: async () => await signer.getAuthToken(),
+  password,
   ssl: { rejectUnauthorized: false },
   max: 10,
 });
