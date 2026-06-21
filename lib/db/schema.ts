@@ -15,6 +15,7 @@ import {
   index,
   primaryKey,
   uniqueIndex,
+  check,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { sql } from "drizzle-orm";
@@ -45,7 +46,9 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at", { withTimezone: true }).default(
     sql`NOW()`,
   ),
-});
+}, (t) => [
+  check("users_role_check", sql`${t.role} IN ('USER', 'ADMIN', 'MODERATOR')`)
+]);
 
 // ---------------------------------------------------------------------------
 // challenges
@@ -72,6 +75,7 @@ export const challenges = pgTable(
   (t) => [
     index("idx_challenges_user_id").on(t.userId),
     index("idx_challenges_skill_category").on(t.skillCategory),
+    check("challenges_target_days_check", sql`${t.targetDays} BETWEEN 7 AND 365`),
   ],
 );
 
@@ -98,7 +102,12 @@ export const proofs = pgTable(
       sql`NOW()`,
     ),
   },
-  (t) => [index("idx_proofs_challenge_id").on(t.challengeId)],
+  (t) => [
+    index("idx_proofs_challenge_id").on(t.challengeId),
+    index("idx_proofs_user_id").on(t.userId),
+    index("idx_proofs_created_at").on(t.createdAt),
+    check("proofs_score_check", sql`${t.score} BETWEEN 0 AND 100`),
+  ],
 );
 
 // ---------------------------------------------------------------------------
@@ -164,7 +173,10 @@ export const notifications = pgTable(
       sql`NOW()`,
     ),
   },
-  (t) => [index("idx_notifications_user_id").on(t.userId)],
+  (t) => [
+    index("idx_notifications_user_id").on(t.userId),
+    index("idx_notifications_is_read").on(t.isRead),
+  ],
 );
 
 // ---------------------------------------------------------------------------
@@ -188,6 +200,7 @@ export const leaderboardEntries = pgTable(
   },
   (t) => [
     primaryKey({ columns: [t.userId, t.challengeId] }),
+    index("idx_leaderboard_entries_rank").on(t.rank),
   ],
 );
 
